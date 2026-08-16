@@ -1,11 +1,12 @@
 package com.minigames.collection.games.xiangqi
 
 import android.content.Context
+import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.SoundManager
 
 /**
- * 象棋（人机）：玩家执红先手，AI 执黑应战。
- * AI 在后台线程计算（深度 3 MiniMax），完成后回到主线程走子。
+ * 象棋（人机）：玩家执红先手，AI 执黑应战（后台线程 MiniMax 深度 3）。
+ * 支持悔棋（撤销 AI+玩家各一步）与认输。
  */
 class XiangqiAiView(context: Context) : XiangqiBaseView(context) {
 
@@ -44,10 +45,24 @@ class XiangqiAiView(context: Context) : XiangqiBaseView(context) {
         }
     }
 
+    override fun onUndoRequested() {
+        undoUntil(XiangqiRules.RED)
+    }
+
+    override fun showResignButton(): Boolean = true
+
+    override fun onResignRequested() {
+        if (aiThinking) return
+        gameOverFlag = true
+        playSound(SoundManager.LOSE)
+        gameOver(GameResult(0, false, "你认输了，黑方获胜"))
+    }
+
     override fun onMoveCompleted(move: XiangqiRules.Move) {
         if (checkGameOver(XiangqiRules.BLACK)) return
         turn = XiangqiRules.BLACK
         updateStatus()
+        announceCheckIfAny()
         aiThinking = true
         val snapshot = board.copyOf()
         Thread {
@@ -61,10 +76,12 @@ class XiangqiAiView(context: Context) : XiangqiBaseView(context) {
                     if (checkGameOver(XiangqiRules.RED)) return@post
                     turn = XiangqiRules.RED
                     updateStatus()
+                    announceCheckIfAny()
                 } else {
                     if (checkGameOver(XiangqiRules.BLACK)) return@post
                     turn = XiangqiRules.RED
                     updateStatus()
+                    announceCheckIfAny()
                 }
             }
         }.start()

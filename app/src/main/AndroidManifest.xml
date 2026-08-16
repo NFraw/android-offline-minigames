@@ -27,5 +27,10 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".LgdxGameActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden" />
     </application>
 </manifest>

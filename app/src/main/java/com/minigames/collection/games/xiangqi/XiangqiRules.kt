@@ -61,6 +61,9 @@ object XiangqiRules {
         for (c in 0 until COLS) {
             b[c] = blackBack[c]
             b[9 * COLS + c] = redBack[c]
+        }
+        // 兵/卒每边 5 个：0,2,4,6,8 列
+        for (c in 0 until COLS step 2) {
             b[3 * COLS + c] = B_PAWN
             b[6 * COLS + c] = R_PAWN
         }

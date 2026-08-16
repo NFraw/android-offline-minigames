@@ -59,6 +59,10 @@ class SettingsActivity : Activity() {
         root.addView(switchRow("📳 震动反馈", "击中/得分/踩雷时的震动", settings.hapticEnabled) { on ->
             settings.hapticEnabled = on
         })
+        // 语音播报开关
+        root.addView(switchRow("🗣 语音播报", "象棋等精品游戏的语音（将军/吃/将死）", settings.voiceEnabled) { on ->
+            settings.voiceEnabled = on
+        })
 
         // 清空最高分
         val clearBtn = TextView(this).apply {

@@ -23,6 +23,7 @@ abstract class GameView(context: Context) : View(context) {
     var callbacks: Callbacks? = null
     var sound: SoundManager? = null
     var haptic: HapticManager? = null
+    var voice: VoiceManager? = null
 
     var paused = true
     protected val gameRect = RectF()
@@ -126,6 +127,10 @@ abstract class GameView(context: Context) : View(context) {
 
     protected fun buzz() {
         haptic?.buzz()
+    }
+
+    protected fun speakVoice(tag: String) {
+        voice?.speak(tag)
     }
 
     /** 游戏结束：冻结画面并通知 Activity 弹结算框。 */

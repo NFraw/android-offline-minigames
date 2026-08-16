@@ -3,7 +3,7 @@ package com.minigames.collection.games.xiangqi
 import android.content.Context
 import com.minigames.collection.common.SoundManager
 
-/** 象棋（双人）：红方先手，轮流走子。 */
+/** 象棋（双人）：红方先手，轮流走子；支持悔棋。 */
 class XiangqiDuelView(context: Context) : XiangqiBaseView(context) {
 
     override fun onIntersectionTap(idx: Int) {
@@ -45,6 +45,7 @@ class XiangqiDuelView(context: Context) : XiangqiBaseView(context) {
         if (checkGameOver(next)) return
         turn = next
         updateStatus()
+        announceCheckIfAny()
     }
 
     override fun getStatusLine(): String =

@@ -19,6 +19,12 @@ class SettingsStore(private val context: Context) {
             prefs.edit().putBoolean("haptic", v).apply()
         }
 
+    var voiceEnabled: Boolean
+        get() = prefs.getBoolean("voice", true)
+        set(v) {
+            prefs.edit().putBoolean("voice", v).apply()
+        }
+
     fun clearScores() {
         context.getSharedPreferences("scores", Context.MODE_PRIVATE).edit().clear().apply()
     }

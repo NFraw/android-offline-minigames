@@ -78,7 +78,7 @@ class MainActivity : Activity() {
             setPadding(0, dp(4), 0, dp(12))
         }
         listOf<Pair<GameCategory?, String>>(
-            null to "全部", GameCategory.SOLO to "单人", GameCategory.DUEL to "双人"
+            null to "全部", GameCategory.SOLO to "单人", GameCategory.DUEL to "双人", GameCategory.MULTI to "多人"
         ).forEach { (cat, label) ->
             chipContainer.addView(makeChip(label, cat), LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(36)).apply { marginEnd = dp(10) })
@@ -98,7 +98,12 @@ class MainActivity : Activity() {
         grid.adapter = GameAdapter()
         grid.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             val spec = games()[position]
-            startActivity(Intent(this, GameActivity::class.java).putExtra("game", spec.id))
+            val intent = if (spec.className.startsWith("hd:")) {
+                Intent(this, LgdxGameActivity::class.java).putExtra("game", spec.id)
+            } else {
+                Intent(this, GameActivity::class.java).putExtra("game", spec.id)
+            }
+            startActivity(intent)
         }
         root.addView(grid, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
@@ -127,7 +132,8 @@ class MainActivity : Activity() {
             val active = when (chip.text.toString()) {
                 "全部" -> currentCategory == null
                 "单人" -> currentCategory == GameCategory.SOLO
-                else -> currentCategory == GameCategory.DUEL
+                "双人" -> currentCategory == GameCategory.DUEL
+                else -> currentCategory == GameCategory.MULTI
             }
             chip.setTextColor(if (active) 0xFFFFFFFF.toInt() else 0xFF1C2333.toInt())
             chip.background = if (active) {
