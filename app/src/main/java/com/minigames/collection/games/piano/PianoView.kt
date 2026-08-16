@@ -8,15 +8,15 @@ import android.view.MotionEvent
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
+import kotlin.math.ceil
 
-/** 别踩白块：黑块从底部冒出向上滚动，点击黑块得分，踩白/漏块失败。 */
+/** 别踩白块：黑块从顶部下落滚向底部，点击黑块得分，踩白/漏块失败。 */
 class PianoView(context: Context) : GameView(context) {
 
-    private data class Row(val col: Int, var hit: Boolean)
+    private data class Row(val col: Int, var y: Float, var hit: Boolean)
 
     private val COLS = 4
     private val rows = ArrayList<Row>()
-    private var offset = 0f
     private var rowH = 0f
     private var colW = 0f
     private var score = 0
@@ -51,8 +51,7 @@ class PianoView(context: Context) : GameView(context) {
         if (event.action != MotionEvent.ACTION_DOWN || over || paused) return
         started = true
         val c = (event.x / colW).toInt()
-        val i = rowAt(event.y) ?: return
-        val row = rows[i]
+        val row = rowAt(event.y) ?: return
         if (row.hit) return // 已点过的行不再计分/判罚
         if (c == row.col) {
             row.hit = true
@@ -67,44 +66,46 @@ class PianoView(context: Context) : GameView(context) {
         }
     }
 
-    /** 按屏幕坐标反查所在行索引（rows[0] 在底部，且整体随 offset 上移）。 */
-    private fun rowAt(y: Float): Int? {
-        for (i in rows.indices) {
-            val top = height - (i + 1) * rowH + offset
-            if (y >= top && y < top + rowH) return i
+    /** 按屏幕坐标反查所在行（y 为行顶坐标，行整体向下滚动）。 */
+    private fun rowAt(y: Float): Row? {
+        for (r in rows) {
+            if (y >= r.y && y < r.y + rowH) return r
         }
         return null
     }
 
     override fun update(dt: Float) {
         if (over || !started) return
-        // 黑块向上滚动
-        offset -= dt * rowH * speed * 0.9f
-        // 整行滚出：最顶部一行被移除；若它从未被点击（且曾出现在屏幕上）视为漏块
-        while (offset <= -rowH) {
-            offset += rowH
-            if (rows.isNotEmpty()) {
-                val top = rows.removeAt(rows.size - 1)
-                if (!top.hit) {
+        // 黑块整体向下滚动
+        val step = dt * rowH * speed * 0.9f
+        for (r in rows) r.y += step
+        // 整行滚出屏幕底部：若从未被点击视为漏块
+        val it = rows.iterator()
+        while (it.hasNext()) {
+            val r = it.next()
+            if (r.y >= height) {
+                it.remove()
+                if (!r.hit) {
                     over = true
                     playSound(SoundManager.LOSE)
                     gameOver(GameResult(score, false, "漏掉黑块了！得分 " + score))
                     return
                 }
             }
-            rows.add(0, Row((0 until COLS).random(), false))
+        }
+        // 顶部补新行：保证最顶行始终在屏幕上方等待滑入
+        while (rows.first().y > -rowH) {
+            rows.add(0, Row((0 until COLS).random(), rows.first().y - rowH, false))
         }
         invalidate()
     }
 
     override fun drawGame(canvas: Canvas) {
         canvas.drawRect(gameRect, bgPaint)
-        for (i in rows.indices) {
-            val y = height - (i + 1) * rowH + offset
-            if (y > height || y + rowH < 0) continue
-            val row = rows[i]
-            canvas.drawRect(RectF(0f, y, width.toFloat(), y + rowH), if (row.hit) whiteHitPaint else whitePaint)
-            canvas.drawRect(RectF(row.col * colW, y, (row.col + 1) * colW, y + rowH), if (row.hit) blackHitPaint else blackPaint)
+        for (r in rows) {
+            if (r.y > height || r.y + rowH < 0) continue
+            canvas.drawRect(RectF(0f, r.y, width.toFloat(), r.y + rowH), if (r.hit) whiteHitPaint else whitePaint)
+            canvas.drawRect(RectF(r.col * colW, r.y, (r.col + 1) * colW, r.y + rowH), if (r.hit) blackHitPaint else blackPaint)
         }
         for (c in 1 until COLS) {
             canvas.drawLine(c * colW, 0f, c * colW, height.toFloat(), linePaint)
@@ -119,9 +120,11 @@ class PianoView(context: Context) : GameView(context) {
 
     override fun reset() {
         rows.clear()
-        // 初始只铺满屏幕可见区域（7 行），避免屏幕外预置行被误判为漏块
-        for (i in 0 until 7) rows.add(Row((0 until COLS).random(), false))
-        offset = 0f
+        // 初始铺满屏幕可见区域，最顶一行在屏幕上方外待进入
+        val n = ceil(height / rowH).toInt() + 1
+        for (i in 0 until n) {
+            rows.add(Row((0 until COLS).random(), i * rowH - rowH, false))
+        }
         score = 0
         speed = 1f
         over = false

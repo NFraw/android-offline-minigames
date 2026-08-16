@@ -139,21 +139,25 @@ class GameActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(8), dp(20), dp(4))
         }
-        container.addView(dialogActionButton("👥 双人对战") {
-            createGame(spec.className, root)
-        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)).apply {
-            bottomMargin = dp(12)
-        })
-        container.addView(dialogActionButton("🤖 电脑对战") {
-            createGame(spec.aiClass!!, root)
-        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)))
         val d = AlertDialog.Builder(this)
             .setTitle(spec.emoji + " " + spec.name)
             .setMessage("请选择对战模式")
             .setView(container)
             .setCancelable(false)
             .setNegativeButton("返回菜单") { _, _ -> finish() }
-            .show()
+            .create()
+        container.addView(dialogActionButton("👥 双人对战") {
+            // 先关闭模式对话框再创建游戏，否则对话框会一直盖在游戏上层（且不可点击外部关闭）
+            d.dismiss()
+            createGame(spec.className, root)
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)).apply {
+            bottomMargin = dp(12)
+        })
+        container.addView(dialogActionButton("🤖 电脑对战") {
+            d.dismiss()
+            createGame(spec.aiClass!!, root)
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)))
+        d.show()
         Ui.styleDialog(d, resources.displayMetrics.density)
     }
 
