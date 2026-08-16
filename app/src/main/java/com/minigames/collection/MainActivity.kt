@@ -24,6 +24,9 @@ class MainActivity : Activity() {
     private var currentCategory: GameCategory? = null
     private lateinit var grid: GridView
     private val chips = mutableListOf<TextView>()
+    /** 平板（最小宽度 ≥600dp）走响应式布局：宫格列数更多、间距更大。 */
+    private val isTablet: Boolean
+        get() = resources.configuration.smallestScreenWidthDp >= 600
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,12 +90,18 @@ class MainActivity : Activity() {
         root.addView(chipRow, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
-        // ---- 游戏宫格 ----
+        // ---- 游戏宫格（平板响应式：列数/间距随屏宽变化）----
         grid = GridView(this).apply {
-            numColumns = 2
-            horizontalSpacing = dp(12)
-            verticalSpacing = dp(12)
-            setPadding(dp(16), dp(6), dp(16), dp(20))
+            numColumns = when {
+                isTablet && resources.configuration.screenWidthDp >= 900 -> 4
+                isTablet -> 3
+                else -> 2
+            }
+            val gap = dp(if (isTablet) 16 else 12)
+            horizontalSpacing = gap
+            verticalSpacing = gap
+            val side = dp(if (isTablet) 20 else 16)
+            setPadding(side, dp(6), side, dp(20))
             clipToPadding = false
         }
         grid.adapter = GameAdapter()
@@ -159,10 +168,11 @@ class MainActivity : Activity() {
             }
             val icon = TextView(this@MainActivity).apply {
                 text = spec.emoji
-                textSize = 50f
+                textSize = if (isTablet) 64f else 50f
                 gravity = Gravity.CENTER
             }
-            iconBox.addView(icon, LinearLayout.LayoutParams(dp(64), dp(64)))
+            val iconSize = dp(if (isTablet) 84 else 64)
+            iconBox.addView(icon, LinearLayout.LayoutParams(iconSize, iconSize))
             val name = TextView(this@MainActivity).apply {
                 text = spec.name
                 textSize = 27f

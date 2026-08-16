@@ -20,6 +20,8 @@ class SimonView(context: Context) : GameView(context) {
     private var level = 1
     private var over = false
     private var quadR = 0f
+    private var tapFlash = -1f // 点击反馈剩余时长，-1 表示无
+    private var tapQuad = 0
 
     private val colors = intArrayOf(
         0xFFFF5252.toInt(), 0xFF3ED98A.toInt(), 0xFFF5D547.toInt(), 0xFF37C2F0.toInt()
@@ -44,8 +46,12 @@ class SimonView(context: Context) : GameView(context) {
         if (event.action != MotionEvent.ACTION_DOWN || over || paused || showing) return
         val dx = event.x - width / 2f
         val dy = event.y - height / 2f
-        if (Math.hypot(dx.toDouble(), dy.toDouble()) > quadR) return
+        // 用正方形边界判定，与绘制出的色块方阵完全一致（角落也能点到）
+        if (Math.abs(dx) > quadR || Math.abs(dy) > quadR) return
         val q = if (dx > 0) if (dy > 0) 3 else 1 else if (dy > 0) 2 else 0
+        tapQuad = q
+        tapFlash = 0.25f
+        invalidate()
         if (q == sequence[inputIdx]) {
             inputIdx++
             playSound(SoundManager.CLICK)
@@ -67,14 +73,17 @@ class SimonView(context: Context) : GameView(context) {
     }
 
     override fun update(dt: Float) {
+        if (tapFlash > 0f) tapFlash -= dt
         if (over || !showing) return
         showTimer -= dt
         if (showTimer <= 0f) {
             showIdx++
-            showTimer = 0.45f
             if (showIdx >= sequence.size) {
+                // 最后一个色块已闪完，进入等待输入
                 showing = false
                 inputIdx = 0
+            } else {
+                showTimer = 0.45f
             }
         }
         invalidate()
@@ -87,7 +96,9 @@ class SimonView(context: Context) : GameView(context) {
             val cx = if (q == 0 || q == 2) width / 2f - half else width / 2f
             val cy = if (q == 0 || q == 1) height / 2f - half else height / 2f
             val rect = RectF(cx, cy, cx + half, cy + half)
-            val lit = showing && showIdx > q && showIdx == q + 1 && sequence[showIdx - 1] == q
+            // 正在展示时按序列值点亮对应色块；点击反馈单独点亮被按下的色块
+            val lit = (tapFlash > 0f && tapQuad == q) ||
+                (showing && showIdx < sequence.size && sequence[showIdx] == q)
             quadPaint.color = if (lit) colors[q] else dimColors[q]
             canvas.drawRoundRect(rect, dp(14).toFloat(), dp(14).toFloat(), quadPaint)
         }
@@ -105,6 +116,7 @@ class SimonView(context: Context) : GameView(context) {
         showing = true
         level = 1
         over = false
+        tapFlash = -1f
         setScore(0)
         start()
     }

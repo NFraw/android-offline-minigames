@@ -13,7 +13,8 @@ import kotlin.math.min
 
 /**
  * 双人贪吃蛇对战：屏幕左半区滑动控制玩家1（绿），右半区控制玩家2（橙）。
- * 抢食物变长，撞墙/撞蛇身/撞对方即死，最后存活的玩家获胜。
+ * 抢食物变长，撞墙/撞蛇身/撞对方即死；一条蛇死后另一条继续玩，
+ * 两条蛇都死后按身体长度（分数）结算胜负。
  */
 class SnakeBattleView(context: Context) : GameView(context) {
 
@@ -230,12 +231,12 @@ class SnakeBattleView(context: Context) : GameView(context) {
             alive1 = false
             alive2 = false
         }
-        // 撞对方身体
-        if (h1 != null && body2.any { it == h1 }) alive1 = false
-        if (h2 != null && body1.any { it == h2 }) alive2 = false
+        // 撞对方身体（只撞还活着的蛇，死蛇的身体不再阻挡幸存者）
+        if (alive1 && alive2 && h1 != null && body2.any { it == h1 }) alive1 = false
+        if (alive1 && alive2 && h2 != null && body1.any { it == h2 }) alive2 = false
         // 撞自己
-        if (h1 != null && body1.any { it == h1 }) alive1 = false
-        if (h2 != null && body2.any { it == h2 }) alive2 = false
+        if (alive1 && h1 != null && body1.any { it == h1 }) alive1 = false
+        if (alive2 && h2 != null && body2.any { it == h2 }) alive2 = false
 
         if (alive1 && h1 != null) {
             body1.addFirst(h1)
@@ -259,18 +260,18 @@ class SnakeBattleView(context: Context) : GameView(context) {
                 body2.removeLast()
             }
         }
+        // 一条蛇死后另一条继续玩，两条都死后按身体长度（分数）结算
         if (!alive1 && !alive2) {
             over = true
-            playSound(SoundManager.LOSE)
-            gameOver(GameResult(0, false, "同归于尽！玩家1 " + body1.size + " 节 vs 玩家2 " + body2.size + " 节"))
-        } else if (!alive1) {
-            over = true
             playSound(SoundManager.WIN)
-            gameOver(GameResult(0, true, "玩家 2 获胜！玩家1 " + body1.size + " 节 vs 玩家2 " + body2.size + " 节"))
-        } else if (!alive2) {
-            over = true
-            playSound(SoundManager.WIN)
-            gameOver(GameResult(0, true, "玩家 1 获胜！玩家1 " + body1.size + " 节 vs 玩家2 " + body2.size + " 节"))
+            val s1 = body1.size
+            val s2 = body2.size
+            val summary = when {
+                s1 > s2 -> "玩家 1 获胜！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
+                s2 > s1 -> "玩家 2 获胜！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
+                else -> "平局！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
+            }
+            gameOver(GameResult(0, s1 != s2, summary))
         }
     }
 

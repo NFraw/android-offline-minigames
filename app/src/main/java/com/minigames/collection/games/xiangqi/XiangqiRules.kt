@@ -34,20 +34,21 @@ object XiangqiRules {
 
     fun sideOf(p: Int): Int = if (p in 1..7) RED else BLACK
 
+    /** 棋子文字按传统写法：红方「帥仕相傌俥炮兵」、黑方「將士象馬車砲卒」。 */
     fun pieceName(p: Int): String = when (p) {
-        R_KING -> "帅"
+        R_KING -> "帥"
         R_ADVISOR -> "仕"
         R_ELEPHANT -> "相"
-        R_HORSE -> "马"
-        R_ROOK -> "车"
+        R_HORSE -> "傌"
+        R_ROOK -> "俥"
         R_CANNON -> "炮"
         R_PAWN -> "兵"
-        B_KING -> "将"
+        B_KING -> "將"
         B_ADVISOR -> "士"
         B_ELEPHANT -> "象"
-        B_HORSE -> "马"
-        B_ROOK -> "车"
-        B_CANNON -> "炮"
+        B_HORSE -> "馬"
+        B_ROOK -> "車"
+        B_CANNON -> "砲"
         B_PAWN -> "卒"
         else -> ""
     }

@@ -114,8 +114,11 @@ class MathDuelView(context: Context) : GameView(context) {
         if (event.actionMasked != MotionEvent.ACTION_DOWN) return
         val tap = if (event.y < height / 2f) 0 else 1
         val keys = if (tap == 0) keys1 else keys2
+        // 玩家 1 的上半屏整体旋转 180°，触摸点需按同样的旋转反变换回去做命中测试
+        val px = if (tap == 0) width - event.x else event.x
+        val py = if (tap == 0) height / 2f - event.y else event.y
         for (k in keys) {
-            if (k.rect.contains(event.x, event.y)) {
+            if (k.rect.contains(px, py)) {
                 onKey(tap, k)
                 return
             }
@@ -232,11 +235,16 @@ class MathDuelView(context: Context) : GameView(context) {
         canvas.drawText(a.toString() + " " + op + " " + b + " = ?", width / 2f, height / 2f + dp(10).toFloat(), questionPaint)
         canvas.drawText("算好后用下方键盘输入并提交 · 先到 " + WIN_SCORE + " 分胜", width / 2f, height / 2f + dp(58).toFloat(), hintPaint)
 
-        // 玩家 1（上半屏）
+        // 玩家 1（上半屏，对向视角：整半屏绕中心旋转 180°，坐在上方的玩家 1 可正常阅读自己的数字）
+        canvas.save()
+        canvas.translate(width / 2f, height / 4f)
+        canvas.rotate(180f)
+        canvas.translate(-width / 2f, -height / 4f)
         scorePaint.color = 0xFF6C8BFF.toInt()
         canvas.drawText("玩家 1：" + s1, width / 2f, dp(56).toFloat(), scorePaint)
         drawPad(canvas, keys1, key1Paint, key1Stroke)
         drawInput(canvas, input1, locked1, height / 2f - dp(96).toFloat(), 0)
+        canvas.restore()
 
         // 玩家 2（下半屏）
         scorePaint.color = 0xFFFFA04A.toInt()

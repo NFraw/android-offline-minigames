@@ -164,6 +164,7 @@ abstract class GameView(context: Context) : View(context) {
         paused = true
         showPauseOverlay = true
         onGamePause()
+        invalidate()
     }
 
     /** 继续。 */

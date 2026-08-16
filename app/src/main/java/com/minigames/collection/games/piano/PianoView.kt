@@ -16,6 +16,7 @@ class PianoView(context: Context) : GameView(context) {
     private data class Row(val col: Int, var y: Float, var hit: Boolean)
 
     private val COLS = 4
+    private val MAX_SPEED = 3.0f
     private val rows = ArrayList<Row>()
     private var rowH = 0f
     private var colW = 0f
@@ -54,16 +55,33 @@ class PianoView(context: Context) : GameView(context) {
         val row = rowAt(event.y) ?: return
         if (row.hit) return // 已点过的行不再计分/判罚
         if (c == row.col) {
+            // 顺序约束：只能点击当前最下方、尚未点过的黑块，依次往上
+            if (row !== lowestUnhit()) {
+                over = true
+                playSound(SoundManager.LOSE)
+                gameOver(GameResult(score, false, "点错顺序了！得分 " + score))
+                return
+            }
             row.hit = true
             score++
             setScore(score)
             playSound(SoundManager.EAT)
-            if (score % 10 == 0) speed += 0.25f
+            // 每点击一个黑块加速一次，速度封顶
+            speed = (speed + 0.05f).coerceAtMost(MAX_SPEED)
         } else {
             over = true
             playSound(SoundManager.LOSE)
             gameOver(GameResult(score, false, "踩到白块了！得分 " + score))
         }
+    }
+
+    /** 当前屏幕内最下方、尚未点过的黑块所在行。 */
+    private fun lowestUnhit(): Row? {
+        var lowest: Row? = null
+        for (r in rows) {
+            if (!r.hit && (lowest == null || r.y > lowest.y)) lowest = r
+        }
+        return lowest
     }
 
     /** 按屏幕坐标反查所在行（y 为行顶坐标，行整体向下滚动）。 */
@@ -115,7 +133,7 @@ class PianoView(context: Context) : GameView(context) {
         val pillH = dp(46).toFloat()
         roundRect(canvas, RectF(width / 2f - pillW / 2f, dp(10).toFloat(), width / 2f + pillW / 2f, dp(10).toFloat() + pillH), 0xB31C2333.toInt(), 23)
         canvas.drawText("得分 " + score, width / 2f, centerBaseline(dp(10).toFloat() + pillH / 2f, scorePaint), scorePaint)
-        canvas.drawText("点击黑色方块，别踩白色", width / 2f, height - dp(30).toFloat(), hintPaint)
+        canvas.drawText("从下往上依次点击黑色方块 · 别踩白块", width / 2f, height - dp(30).toFloat(), hintPaint)
     }
 
     override fun reset() {

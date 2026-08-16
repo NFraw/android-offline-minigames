@@ -84,15 +84,8 @@ class BreakoutView(context: Context) : GameView(context) {
             vx = (ballX - paddleX) / (paddleW / 2f) * speed * 0.65f
             playSound(SoundManager.MOVE)
         }
-        // 砖块碰撞（按球头位置判断所在砖）
-        val c = (ballX / blockW).toInt().coerceIn(0, COLS - 1)
-        val r = ((ballY - ballR) / blockH).toInt().coerceIn(0, ROWS - 1)
-        if (blocks[r * COLS + c] > 0) {
-            blocks[r * COLS + c]--
-            vy = -abs(vy)
-            score += 10
-            setScore(score)
-            playSound(SoundManager.EAT)
+        // 砖块碰撞：圆形球与矩形砖块真实碰撞箱，命中后按接触面反射并扣血量
+        if (hitBlock()) {
             if (blocks.none { it > 0 }) {
                 over = true
                 playSound(SoundManager.WIN)
@@ -107,6 +100,51 @@ class BreakoutView(context: Context) : GameView(context) {
             return
         }
         invalidate()
+    }
+
+    /**
+     * 圆形球与砖块矩形碰撞检测：命中则扣该砖一点血量并返回 true。
+     * 用真实圆-矩形相交判断，且只对真正与球接触的砖生效（不会把球下方的区域错误钳到最后一排）。
+     */
+    private fun hitBlock(): Boolean {
+        for (r in 0 until ROWS) {
+            for (c in 0 until COLS) {
+                if (blocks[r * COLS + c] <= 0) continue
+                val left = c * blockW
+                val top = r * blockH
+                val right = left + blockW
+                val bottom = top + blockH
+                val cx = ballX.coerceIn(left, right)
+                val cy = ballY.coerceIn(top, bottom)
+                val dx = ballX - cx
+                val dy = ballY - cy
+                if (dx * dx + dy * dy > ballR * ballR) continue
+                blocks[r * COLS + c]--
+                score += 10
+                setScore(score)
+                playSound(SoundManager.EAT)
+                reflect(left, top, right, bottom, dx, dy)
+                return true
+            }
+        }
+        return false
+    }
+
+    /** 按圆心相对砖块的位置决定反射轴，并把球推出砖块，避免连续多帧重复命中。 */
+    private fun reflect(left: Float, top: Float, right: Float, bottom: Float, dx: Float, dy: Float) {
+        val penX = ballR - abs(dx)
+        val penY = ballR - abs(dy)
+        when {
+            penX < penY && abs(dx) > 1f -> {
+                vx = if (ballX < left) -abs(vx) else abs(vx)
+                ballX = if (ballX < left) left - ballR else right + ballR
+            }
+            abs(dy) > 1f -> {
+                vy = if (ballY < top) -abs(vy) else abs(vy)
+                ballY = if (ballY < top) top - ballR else bottom + ballR
+            }
+            else -> if (abs(vx) > abs(vy)) vx = -vx else vy = -vy
+        }
     }
 
     override fun drawGame(canvas: Canvas) {

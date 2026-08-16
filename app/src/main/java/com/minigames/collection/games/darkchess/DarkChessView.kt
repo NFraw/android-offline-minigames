@@ -216,9 +216,24 @@ class DarkChessView(context: Context) : GameView(context) {
                 canvas.drawRoundRect(rect, dp(6).toFloat(), dp(6).toFloat(), selPaint)
             }
         }
+        // 顶部回合横幅：明确显示当前轮到谁
+        val bannerW = dp(150).toFloat()
+        val bannerH = dp(48).toFloat()
+        val bannerY = dp(30).toFloat()
+        val isRed = turn == 0
+        roundRect(canvas, RectF(width / 2f - bannerW / 2f, bannerY, width / 2f + bannerW / 2f, bannerY + bannerH),
+            if (isRed) 0xFFE8503A.toInt() else 0xFF1C2333.toInt(), 24)
+        textPaint.color = 0xFFFFFFFF.toInt()
+        textPaint.textSize = sp(26f)
+        textPaint.isFakeBoldText = true
+        canvas.drawText(if (isRed) "红方回合" else "黑方回合", width / 2f, centerBaseline(bannerY + bannerH / 2f, textPaint), textPaint)
+        textPaint.isFakeBoldText = false
+        // 底部提示：拆成两行，避免超长单行被裁掉
         textPaint.color = 0xFF8A93A6.toInt()
-        textPaint.textSize = 36f
-        canvas.drawText((if (turn == 0) "红方" else "黑方") + "回合 · 点击翻开棋子，走相邻格吃子（大小：帅将>仕士>相象>车>马>炮>兵卒，兵卒吃帅将）", width / 2f, boardTop + cell * ROWS + dp(26).toFloat(), textPaint)
+        textPaint.textSize = sp(17f)
+        val hintY = boardTop + cell * ROWS + dp(24).toFloat()
+        canvas.drawText("点击翻开暗子，或走相邻格吃子", width / 2f, hintY, textPaint)
+        canvas.drawText("帅将>仕士>相象>车>马>炮>兵卒 · 兵卒吃帅将", width / 2f, hintY + dp(32).toFloat(), textPaint)
     }
 
     override fun reset() {

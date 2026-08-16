@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -48,6 +49,8 @@ class GameActivity : Activity() {
 
         val gameId = intent.getStringExtra("game")
         spec = GameRegistry.byId(gameId ?: "") ?: run { finish(); return }
+        // 需要横屏的游戏（如切水果）默认转横屏
+        if (spec.landscape) requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         settings = SettingsStore(this)
         sound = SoundManager(this, settings)
         voice = VoiceManager(this, settings)
@@ -129,7 +132,9 @@ class GameActivity : Activity() {
                 showGameOver(result)
             }
         }
-        root.addView(game, FrameLayout.LayoutParams(
+        // 游戏视图插入到最底层（index 0），悬浮控制层（退出/暂停/得分等）必须盖在游戏之上，
+        // 否则不透明的游戏背景会把悬浮按钮全部遮挡，导致"沉浸式部件消失、无法暂停/继续"。
+        root.addView(game, 0, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
     }
 

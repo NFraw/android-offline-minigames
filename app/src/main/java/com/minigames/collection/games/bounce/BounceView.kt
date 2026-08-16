@@ -95,8 +95,10 @@ class BounceView(context: Context) : GameView(context) {
             ballY = ballR
             vy = abs(vy)
         }
-        // 挡板：用上一帧位置判断球是否穿越挡板顶平面，避免高速穿档
-        if (vy > 0 && prevY + ballR >= height - paddleH && ballY + ballR <= height - paddleH &&
+        // 挡板：球下落（vy>0）且从上一帧在挡板顶平面上方，这一帧穿到下方时反弹。
+        // 注意方向：球在下落，ballY 只会变大，判定必须是「上帧在上、本帧在下」，
+        // 写反会导致该条件永远不成立（死代码），挡板永远接不住球。
+        if (vy > 0 && prevY + ballR <= height - paddleH && ballY + ballR >= height - paddleH &&
             abs(ballX - paddleX) < paddleW / 2f + ballR
         ) {
             ballY = height - paddleH - ballR
@@ -106,22 +108,13 @@ class BounceView(context: Context) : GameView(context) {
             if (abs(vx) < speed * 0.15f) vx = if (off >= 0) speed * 0.15f else -speed * 0.15f
             playSound(SoundManager.MOVE)
         }
-        // 砖块碰撞
-        if (vy < 0) {
-            val c = (ballX / blockW).toInt().coerceIn(0, COLS - 1)
-            val r = ((ballY - ballR) / blockH).toInt().coerceIn(0, ROWS - 1)
-            if (blocks[r * COLS + c]) {
-                blocks[r * COLS + c] = false
-                vy = abs(vy)
-                score += 10
-                setScore(score)
-                playSound(SoundManager.EAT)
-                if (blocks.none { it }) {
-                    over = true
-                    playSound(SoundManager.WIN)
-                    gameOver(GameResult(score, true, "全部击碎！得分 " + score))
-                    return
-                }
+        // 砖块碰撞：圆形球与矩形砖块真实碰撞箱，命中后按接触面反射并击碎
+        if (hitBlock()) {
+            if (blocks.none { it }) {
+                over = true
+                playSound(SoundManager.WIN)
+                gameOver(GameResult(score, true, "全部击碎！得分 " + score))
+                return
             }
         }
         // 漏球
@@ -132,6 +125,51 @@ class BounceView(context: Context) : GameView(context) {
             return
         }
         invalidate()
+    }
+
+    /**
+     * 圆形球与砖块矩形碰撞检测：命中则击碎该砖并返回 true。
+     * 用真实圆-矩形相交判断，且只对真正与球接触的砖生效（不会把球下方的区域错误钳到最后一排）。
+     */
+    private fun hitBlock(): Boolean {
+        for (r in 0 until ROWS) {
+            for (c in 0 until COLS) {
+                if (!blocks[r * COLS + c]) continue
+                val left = c * blockW
+                val top = r * blockH
+                val right = left + blockW
+                val bottom = top + blockH
+                val cx = ballX.coerceIn(left, right)
+                val cy = ballY.coerceIn(top, bottom)
+                val dx = ballX - cx
+                val dy = ballY - cy
+                if (dx * dx + dy * dy > ballR * ballR) continue
+                blocks[r * COLS + c] = false
+                score += 10
+                setScore(score)
+                playSound(SoundManager.EAT)
+                reflect(left, top, right, bottom, dx, dy)
+                return true
+            }
+        }
+        return false
+    }
+
+    /** 按圆心相对砖块的位置决定反射轴，并把球推出砖块，避免连续多帧重复命中。 */
+    private fun reflect(left: Float, top: Float, right: Float, bottom: Float, dx: Float, dy: Float) {
+        val penX = ballR - abs(dx)
+        val penY = ballR - abs(dy)
+        when {
+            penX < penY && abs(dx) > 1f -> {
+                vx = if (ballX < left) -abs(vx) else abs(vx)
+                ballX = if (ballX < left) left - ballR else right + ballR
+            }
+            abs(dy) > 1f -> {
+                vy = if (ballY < top) -abs(vy) else abs(vy)
+                ballY = if (ballY < top) top - ballR else bottom + ballR
+            }
+            else -> if (abs(vx) > abs(vy)) vx = -vx else vy = -vy
+        }
     }
 
     override fun drawGame(canvas: Canvas) {

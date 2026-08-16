@@ -37,10 +37,11 @@ class FruitNinjaView(context: Context) : GameView(context) {
 
     private data class Fruit(
         val emoji: String, val value: Int, var x: Float, var y: Float,
-        val vx: Float, var vy: Float, var r: Float,
+        var vx: Float, var vy: Float, var r: Float,
         var cut: Boolean = false, val bomb: Boolean = false)
 
     private val fruits = ArrayList<Fruit>()
+    private var grav = 0f // 重力加速度，随屏幕尺寸自适应
     private var spawnTimer = 0.6f
     private var score = 0
     private var lives = MAX_LIVES
@@ -73,6 +74,8 @@ class FruitNinjaView(context: Context) : GameView(context) {
     }
 
     override fun onLayout(w: Int, h: Int) {
+        // 重力随屏幕高度自适应：不同手机/平板、横竖屏下弧线比例一致
+        grav = h * 2.2f
         reset()
     }
 
@@ -154,9 +157,14 @@ class FruitNinjaView(context: Context) : GameView(context) {
         val it = fruits.iterator()
         while (it.hasNext()) {
             val f = it.next()
-            f.vy += dt * height * 1.3f
+            f.vy += dt * grav
             f.x += f.vx * dt
+            // 左右边界：不能飞出设备两侧，碰壁反弹
+            if (f.x < f.r) { f.x = f.r; f.vx = -f.vx * 0.8f }
+            if (f.x > width - f.r) { f.x = width - f.r; f.vx = -f.vx * 0.8f }
             f.y += f.vy * dt
+            // 顶部边界：不能高于设备，触顶回落
+            if (f.y < f.r) { f.y = f.r; f.vy = -f.vy * 0.5f }
             if (f.y > height * 1.15f) {
                 it.remove()
                 if (!f.cut && !f.bomb) {
@@ -189,8 +197,11 @@ class FruitNinjaView(context: Context) : GameView(context) {
         }
         val speedMul = 1f + (stage - 1) * 0.09f
         val x = width * (0.12f + Math.random().toFloat() * 0.76f)
-        val vx = (Math.random().toFloat() - 0.5f) * height * 1.1f
-        val vy0 = -(height * 1.45f + Math.random().toFloat() * height * 0.35f) * speedMul
+        // 水平速度按屏宽自适应，保证不同尺寸屏幕下横向漂移比例一致
+        val vx = (Math.random().toFloat() - 0.5f) * width * 0.5f * speedMul
+        // 竖直初速度按屏高自适应：弧顶高度约为屏高 0.35~0.85 处，含阶段加速后触顶由边界回落
+        val rise = height * (0.35f + Math.random().toFloat() * 0.5f) * speedMul
+        val vy0 = -Math.sqrt((2f * grav * rise).toDouble()).toFloat()
         if (Math.random() < bombChance) {
             fruits.add(Fruit("💣", 0, x, height * 1.05f, vx, vy0, dp(38).toFloat(), bomb = true))
         } else {

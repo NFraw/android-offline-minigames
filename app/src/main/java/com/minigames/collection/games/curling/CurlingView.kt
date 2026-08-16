@@ -14,12 +14,12 @@ import kotlin.math.hypot
 /**
  * 冰壶（2~4 人同屏轮流）：开局先选人数。
  * 按住蓄力（蓄力条来回摆动），左右滑动调整投出位置与瞄准角度，松手投壶；
- * 冰壶之间会真实碰撞推挤（反弹克制、不夸张）；离圆心最近的一方按壶计分，三局定胜负。
+ * 冰壶之间会真实碰撞推挤（反弹克制、不夸张）；离圆心最近的一方按壶计分。
+ * 局数随人数：2 人 3 局、3 人 4 局、4 人 5 局；下一局先投者为上一局赢家，首局按玩家顺序。
  */
 class CurlingView(context: Context) : GameView(context) {
 
     companion object {
-        private const val ROUNDS = 3             // 总局数
         private const val STONES_PER_PLAYER = 2  // 每人每局投壶数
     }
 
@@ -37,6 +37,8 @@ class CurlingView(context: Context) : GameView(context) {
     private var players = 0
     private var turn = 0
     private var round = 1
+    private var rounds = 3             // 总局数：2 人 3 局、3 人 4 局、4 人 5 局
+    private var lastWinner = 0         // 上一局赢家，作为下一局先投者
     private val score = IntArray(4)
     private val thrownCount = IntArray(4)
     private var throwLeft = STONES_PER_PLAYER
@@ -250,14 +252,15 @@ class CurlingView(context: Context) : GameView(context) {
             Phase.ROUND_END -> {
                 roundEndT += dt
                 if (roundEndT >= 2.6f) {
-                    if (round >= ROUNDS) {
+                    if (round >= rounds) {
                         finishMatch()
                     } else {
                         round++
                         physics.clear()
                         for (i in thrownCount.indices) thrownCount[i] = 0
                         throwLeft = players * STONES_PER_PLAYER
-                        turn = (round - 1) % players
+                        // 下一局先投者 = 上一局赢家；首局先投者按玩家顺序（startMatch 里 turn=0）
+                        turn = lastWinner
                         phase = Phase.THROW
                     }
                     invalidate()
@@ -293,7 +296,8 @@ class CurlingView(context: Context) : GameView(context) {
             if (s.player == bestP && hypot(s.x - centerX, s.y - centerY) < second) points++
         }
         score[bestP] += points
-        roundResult = playerNames[bestP] + " 本轮得 " + points + " 分"
+        lastWinner = bestP
+        roundResult = playerNames[bestP] + " 本轮得 " + points + " 分，下局先投"
         speakVoice("player" + (bestP + 1))
     }
 
@@ -314,7 +318,7 @@ class CurlingView(context: Context) : GameView(context) {
         } else {
             playerNames[champs[0]] + " 获胜！"
         }
-        gameOver(GameResult(0, true, "三局结束：\n" + ranking + "\n\n" + title))
+        gameOver(GameResult(0, true, "$rounds 局结束：\n" + ranking + "\n\n" + title))
     }
 
     // ---------------- 绘制 ----------------
@@ -467,6 +471,8 @@ class CurlingView(context: Context) : GameView(context) {
         for (i in score.indices) score[i] = 0
         for (i in thrownCount.indices) thrownCount[i] = 0
         round = 1
+        rounds = players + 1 // 2 人 3 局、3 人 4 局、4 人 5 局
+        lastWinner = 0
         throwLeft = players * STONES_PER_PLAYER
         turn = 0
         charging = false

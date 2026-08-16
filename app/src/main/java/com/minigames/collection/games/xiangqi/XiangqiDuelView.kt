@@ -79,10 +79,11 @@ class XiangqiDuelView(context: Context) : XiangqiBaseView(context) {
             .setNegativeButton("拒绝", null)
             .create()
         dialog.show()
-        // 黑方（上方）视角整体旋转 180°，使提示框按请求方视角对转显示。
+        // 弹窗应朝向"被请求方"（即对方玩家）：红方悔棋时弹窗转 180° 朝向上方黑方玩家，
+        // 黑方悔棋时弹窗保持正立朝向下方红方玩家。只有红方（下方）悔棋才需要旋转。
         // 只能旋转内容子视图（decorView 的直接子节点）：根视图的旋转不会参与触摸命中测试，
         // 旋转子视图后 ViewGroup 会按子视图矩阵反变换触摸点，按钮点击才能正常命中。
-        if (side == XiangqiRules.BLACK) {
+        if (side == XiangqiRules.RED) {
             val decor = dialog.window?.decorView as? ViewGroup
             if (decor != null && decor.childCount > 0) {
                 decor.getChildAt(0).rotation = 180f
