@@ -31,7 +31,7 @@ class SimonView(context: Context) : GameView(context) {
     private val quadPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 24f
+        textSize = 41f
         color = 0xFFE8EAF0.toInt()
     }
 

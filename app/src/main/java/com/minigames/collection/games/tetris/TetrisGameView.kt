@@ -59,7 +59,7 @@ class TetrisGameView(context: Context) : GameView(context) {
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFF8A93A6.toInt()
         textAlign = Paint.Align.CENTER
-        textSize = 24f
+        textSize = 41f
     }
 
     override fun onLayout(w: Int, h: Int) {

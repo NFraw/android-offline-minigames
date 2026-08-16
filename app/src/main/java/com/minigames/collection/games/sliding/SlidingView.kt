@@ -32,12 +32,12 @@ class SlidingView(context: Context) : GameView(context) {
     private val blankPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1E2740.toInt() }
     private val numPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 30f
+        textSize = 46f
         color = 0xFFE8EAF0.toInt()
     }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 22f
+        textSize = 37f
         color = 0xFF8A93A6.toInt()
     }
 

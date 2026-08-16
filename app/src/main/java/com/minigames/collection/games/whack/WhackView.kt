@@ -40,12 +40,12 @@ class WhackView(context: Context) : GameView(context) {
     private val eyePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF141A2E.toInt() }
     private val timerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 30f
+        textSize = 46f
         color = 0xFFE8EAF0.toInt()
     }
     private val flashPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 42f
+        textSize = 59f
     }
 
     override fun onLayout(w: Int, h: Int) {
@@ -127,15 +127,15 @@ class WhackView(context: Context) : GameView(context) {
         canvas.drawRect(gameRect, bgPaint)
         if (!started) {
             // ---- 开始界面 ----
-            timerPaint.textSize = 46f
+            timerPaint.textSize = 64f
             timerPaint.color = 0xFFE8EAF0.toInt()
             canvas.drawText("🔨 打地鼠", width / 2f, height * 0.36f, timerPaint)
-            timerPaint.textSize = 26f
+            timerPaint.textSize = 44f
             timerPaint.color = 0xFF8A93A6.toInt()
             canvas.drawText("地鼠冒出时点击它得分 · 限时 " + GAME_SECONDS + " 秒", width / 2f, height * 0.44f, timerPaint)
             val btnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3ED98A.toInt() }
             canvas.drawRoundRect(startBtn, dp(18).toFloat(), dp(18).toFloat(), btnPaint)
-            timerPaint.textSize = 30f
+            timerPaint.textSize = 46f
             timerPaint.color = 0xFF141A2E.toInt()
             canvas.drawText("开始游戏", width / 2f, startBtn.centerY() - (timerPaint.descent() + timerPaint.ascent()) / 2f, timerPaint)
             return

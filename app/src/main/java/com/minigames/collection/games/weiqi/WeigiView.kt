@@ -54,17 +54,17 @@ class WeigiView(context: Context) : GameView(context) {
     private val markPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE8503A.toInt() }
     private val turnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 26f
+        textSize = 44f
     }
     private val btnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF2A3557.toInt() }
     private val btnTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 24f
+        textSize = 41f
         color = 0xFFE8EAF0.toInt()
     }
     private val infoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 22f
+        textSize = 37f
         color = 0xFF8A93A6.toInt()
     }
 

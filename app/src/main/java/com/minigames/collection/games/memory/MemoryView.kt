@@ -35,7 +35,12 @@ class MemoryView(context: Context) : GameView(context) {
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val faceDownPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF2A3557.toInt() }
     private val faceUpPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE8EAF0.toInt() }
-    private val matchedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF274A38.toInt() }
+    private val matchedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3E9E63.toInt() }
+    private val matchedRingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x66FFFFFF.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+    }
     private val emojiPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val markPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
@@ -43,7 +48,7 @@ class MemoryView(context: Context) : GameView(context) {
     }
     private val movesPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 26f
+        textSize = 44f
         color = 0xFF8A93A6.toInt()
     }
 
@@ -113,6 +118,7 @@ class MemoryView(context: Context) : GameView(context) {
             val radius = cell * 0.12f
             if (matched[i]) {
                 canvas.drawRoundRect(rect, radius, radius, matchedPaint)
+                canvas.drawRoundRect(rect, radius, radius, matchedRingPaint)
                 drawEmoji(canvas, EMOJIS[cards[i]], rect.centerX(), rect.centerY() - emojiPaint.ascent() * 0.35f, cell * 0.5f, emojiPaint)
             } else if (i == flipA || i == flipB) {
                 canvas.drawRoundRect(rect, radius, radius, faceUpPaint)

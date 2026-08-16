@@ -31,12 +31,12 @@ class Reaction4View(context: Context) : GameView(context) {
     private val flashPaint = Paint().apply { color = 0xFFB3392B.toInt() }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 34f
+        textSize = 53f
         color = 0xFFE8EAF0.toInt()
     }
     private val scorePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 20f
+        textSize = 36f
         color = 0xFF8A93A6.toInt()
     }
 

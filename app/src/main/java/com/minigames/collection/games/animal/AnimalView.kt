@@ -9,6 +9,7 @@ import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
 import kotlin.math.abs
+import kotlin.math.min
 
 /** 斗兽棋：象狮虎豹狼狗猫鼠互吃，鼠吃象，先进入对方兽穴或吃光对方获胜。 */
 class AnimalView(context: Context) : GameView(context) {
@@ -50,7 +51,7 @@ class AnimalView(context: Context) : GameView(context) {
     }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 22f
+        textSize = 37f
         color = 0xFF8A93A6.toInt()
     }
 
@@ -95,16 +96,16 @@ class AnimalView(context: Context) : GameView(context) {
         val sy = selected / N
         val captured = board[idx]
         val canMove = canMoveTo(sx, sy, c, r, p)
-        if (canMove && canCapture(p, captured)) {
+        if (canMove && canCapture(sx, sy, p, c, r, captured)) {
             board[idx] = p
             board[selected] = 0
             selected = -1
             playSound(if (captured != 0) SoundManager.EAT else SoundManager.MOVE)
-            // 只有对方子进入己方兽穴才获胜（己方子不能进自己兽穴，此处仅判定对方兽穴）
-            val redDen = 4
-            val blackDen = N * M - N + 4
+            // 走子方进入对方兽穴获胜：黑方兽穴在上 idx=4，红方兽穴在下 idx=(M-1)*N+4。
+            // 己方兽穴已在 canMoveTo 中拦截，不可能走进自己巢穴。
+            val blackDen = 4
+            val redDen = (M - 1) * N + 4
             if ((idx == blackDen && turn == 0) || (idx == redDen && turn == 1)) {
-                // 走子方进入对方兽穴 → 走子方获胜（黑方兽穴=idx4 被红方进入；红方兽穴=idx58 被黑方进入）
                 over = true
                 playSound(SoundManager.WIN)
                 gameOver(GameResult(0, true, (if (turn == 0) "红方" else "黑方") + "进入兽穴获胜！"))
@@ -124,32 +125,44 @@ class AnimalView(context: Context) : GameView(context) {
     private fun side(p: Int): Int = if (p > 0) 0 else 1
 
     private fun canMoveTo(sx: Int, sy: Int, tx: Int, ty: Int, p: Int): Boolean {
+        // 任何棋子都不能进入己方兽穴
+        val didx = ty * N + tx
+        if (side(p) == 0 && didx == (M - 1) * N + 4) return false
+        if (side(p) == 1 && didx == 4) return false
         val dx = abs(tx - sx)
         val dy = abs(ty - sy)
-        if (dx + dy != 1) {
-            // 狮虎跳河：横向跳 3 格过河（中间是水且路径上无子）
-            if (rankOf(p) == 6 || rankOf(p) == 7) {
-                if (dy == 0 && dx == 3 && isWater((sx + tx) / 2, sy)) {
-                    val mid1 = sy * N + (sx + tx) / 2
-                    val mid2 = sy * N + tx - (tx - sx) / 2
-                    if (board[mid1] == 0 && board[mid2] == 0) return true
-                }
-                if (dx == 0 && dy == 3 && isWater(sx, (sy + ty) / 2)) {
-                    val mid1 = ((sy + ty) / 2) * N + sx
-                    val mid2 = (ty - (ty - sy) / 2) * N + sx
-                    if (board[mid1] == 0 && board[mid2] == 0) return true
-                }
-            }
-            return false
+        if (dx + dy == 1) {
+            // 普通一步：仅鼠可进/出水面，其余棋子不能进水
+            if (isWater(tx, ty) && rankOf(p) != 1) return false
+            return true
         }
-        // 鼠不能进兽穴和对手兽穴；兽穴判定简化：跳过
-        if (isWater(tx, ty) && rankOf(p) != 1) return false
-        if (isWater(sx, sy) && !isWater(tx, ty)) return false
-        return true
+        // 狮虎跳河：纵向跨一段河（2 格水，跳距 3）或横向跨整条河（3 格水，跳距 4），
+        // 被越过的格子必须全是水面且无子；落点天然是陆地（对岸）。
+        if (rankOf(p) == 6 || rankOf(p) == 7) {
+            if (dy == 0 && dx == 4) {
+                val lo = min(sx, tx)
+                return isWater(lo + 1, sy) && isWater(lo + 2, sy) && isWater(lo + 3, sy) &&
+                    board[sy * N + lo + 1] == 0 && board[sy * N + lo + 2] == 0 && board[sy * N + lo + 3] == 0
+            }
+            if (dx == 0 && dy == 3) {
+                val lo = min(sy, ty)
+                return isWater(sx, lo + 1) && isWater(sx, lo + 2) &&
+                    board[(lo + 1) * N + sx] == 0 && board[(lo + 2) * N + sx] == 0
+            }
+        }
+        return false
     }
 
-    private fun canCapture(p: Int, target: Int): Boolean {
+    private fun canCapture(sx: Int, sy: Int, p: Int, tx: Int, ty: Int, target: Int): Boolean {
         if (target == 0) return true
+        val pWater = isWater(sx, sy)
+        val tWater = isWater(tx, ty)
+        // 水中鼠的庇护：岸上棋子不能吃水中的鼠
+        if (tWater && !pWater) return false
+        // 水中的鼠不能吃岸上棋子
+        if (pWater && !tWater) return false
+        // 水中对水中：只有鼠能进水，鼠在河中可互吃
+        if (pWater) return true
         val pr = rankOf(p)
         val tr = rankOf(target)
         // 鼠吃象
@@ -185,7 +198,7 @@ class AnimalView(context: Context) : GameView(context) {
                 canvas.drawCircle(x + cell / 2f, y + cell / 2f, cell * 0.36f, piecePaint)
                 textPaint.color = 0xFFFFFFFF.toInt()
                 textPaint.textSize = cell * 0.5f
-                canvas.drawText(NAMES[a], x + cell / 2f, y + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
+                drawPieceText(canvas, textPaint, NAMES[a], x + cell / 2f, y + cell / 2f, p < 0)
             }
             if (r * N + c == selected) {
                 canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), selPaint)
@@ -195,21 +208,24 @@ class AnimalView(context: Context) : GameView(context) {
         canvas.drawText("穴", boardLeft + 4 * cell + cell / 2f, boardTop + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
         canvas.drawText("穴", boardLeft + 4 * cell + cell / 2f, boardTop + 6 * cell + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
         textPaint.color = 0xFF8A93A6.toInt()
-        textPaint.textSize = 20f
-        canvas.drawText((if (turn == 0) "红方" else "黑方") + "回合 · 点击选子再点目标 · 象狮虎豹狼狗猫鼠互吃，鼠吃象", width / 2f, boardTop + cell * M + dp(28).toFloat(), textPaint)
+        textPaint.textSize = 36f
+        canvas.drawText((if (turn == 0) "红方" else "黑方") + "回合 · 象狮虎豹狼狗猫鼠互吃，鼠吃象 · 狮虎可跳河", width / 2f, boardTop + cell * M + dp(28).toFloat(), textPaint)
     }
 
     override fun reset() {
         for (i in board.indices) board[i] = 0
-        // 标准布局：两侧各 4 子，兽穴 (4,0)/(4,6) 留空
-        // 红方（正数）在下 y=6，黑方（负数）在上 y=0
-        val left = intArrayOf(ELEPHANT, LION, TIGER, LEOPARD)
-        val right = intArrayOf(WOLF, DOG, CAT, RAT)
+        // 官方标准布局（兽穴 (4,0)/(4,6) 留空）：
+        // 黑方（负数，上）：狮 象 鼠 猫 [穴] 狼 狗 豹 虎
+        // 红方（正数，下）：虎 豹 狗 狼 [穴] 猫 鼠 象 狮
+        val redLeft = intArrayOf(TIGER, LEOPARD, DOG, WOLF)
+        val redRight = intArrayOf(CAT, RAT, ELEPHANT, LION)
+        val blackLeft = intArrayOf(LION, ELEPHANT, RAT, CAT)
+        val blackRight = intArrayOf(WOLF, DOG, LEOPARD, TIGER)
         for (i in 0 until 4) {
-            board[(M - 1) * N + i] = left[i]
-            board[0 * N + i] = -left[i]
-            board[(M - 1) * N + 5 + i] = right[i]
-            board[0 * N + 5 + i] = -right[i]
+            board[0 * N + i] = -blackLeft[i]
+            board[0 * N + 5 + i] = -blackRight[i]
+            board[(M - 1) * N + i] = redLeft[i]
+            board[(M - 1) * N + 5 + i] = redRight[i]
         }
         selected = -1
         turn = 0

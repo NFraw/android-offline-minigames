@@ -36,12 +36,12 @@ class HuarongView(context: Context) : GameView(context) {
     private val blockPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF5A54A.toInt() }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 26f
+        textSize = 44f
         color = 0xFFFFFFFF.toInt()
     }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 20f
+        textSize = 36f
         color = 0xFF8A93A6.toInt()
     }
 

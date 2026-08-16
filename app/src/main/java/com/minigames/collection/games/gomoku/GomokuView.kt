@@ -46,7 +46,7 @@ class GomokuView(context: Context) : GameView(context) {
     private val markPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE8503A.toInt() }
     private val turnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 28f
+        textSize = 48f
     }
 
     override fun onLayout(w: Int, h: Int) {

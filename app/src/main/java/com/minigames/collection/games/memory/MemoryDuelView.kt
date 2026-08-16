@@ -38,12 +38,12 @@ class MemoryDuelView(context: Context) : GameView(context) {
     private val emojiPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 24f
+        textSize = 41f
         color = 0xFFE8EAF0.toInt()
     }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 20f
+        textSize = 36f
         color = 0xFF8A93A6.toInt()
     }
 

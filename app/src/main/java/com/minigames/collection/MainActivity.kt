@@ -44,13 +44,13 @@ class MainActivity : Activity() {
         }
         titleRow.addView(TextView(this).apply {
             text = "🎮 迷你游戏合集"
-            textSize = 25f
+            textSize = 42f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(0xFF1C2333.toInt())
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         titleRow.addView(TextView(this).apply {
             text = "⚙"
-            textSize = 22f
+            textSize = 37f
             gravity = Gravity.CENTER
             setTextColor(0xFF4A6CF7.toInt())
             background = rounded(0xFFEDF0FF.toInt(), dp(14).toFloat())
@@ -61,7 +61,7 @@ class MainActivity : Activity() {
         header.addView(titleRow)
         header.addView(TextView(this).apply {
             text = "已收录 " + GameRegistry.games.size + " 款游戏 · 纯离线运行 · 点击卡片查看玩法"
-            textSize = 13f
+            textSize = 26f
             setTextColor(0xFF8A93A6.toInt())
             setPadding(0, dp(6), 0, 0)
         })
@@ -97,13 +97,7 @@ class MainActivity : Activity() {
         }
         grid.adapter = GameAdapter()
         grid.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            val spec = games()[position]
-            val intent = if (spec.className.startsWith("hd:")) {
-                Intent(this, LgdxGameActivity::class.java).putExtra("game", spec.id)
-            } else {
-                Intent(this, GameActivity::class.java).putExtra("game", spec.id)
-            }
-            startActivity(intent)
+            startActivity(Intent(this, GameActivity::class.java).putExtra("game", games()[position].id))
         }
         root.addView(grid, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
@@ -117,7 +111,7 @@ class MainActivity : Activity() {
     private fun makeChip(label: String, cat: GameCategory?): TextView =
         TextView(this).apply {
             text = label
-            textSize = 14f
+            textSize = 28f
             gravity = Gravity.CENTER
             setPadding(dp(18), 0, dp(18), 0)
             setOnClickListener {
@@ -133,7 +127,8 @@ class MainActivity : Activity() {
                 "全部" -> currentCategory == null
                 "单人" -> currentCategory == GameCategory.SOLO
                 "双人" -> currentCategory == GameCategory.DUEL
-                else -> currentCategory == GameCategory.MULTI
+                "多人" -> currentCategory == GameCategory.MULTI
+                else -> false
             }
             chip.setTextColor(if (active) 0xFFFFFFFF.toInt() else 0xFF1C2333.toInt())
             chip.background = if (active) {
@@ -164,13 +159,13 @@ class MainActivity : Activity() {
             }
             val icon = TextView(this@MainActivity).apply {
                 text = spec.emoji
-                textSize = 32f
+                textSize = 50f
                 gravity = Gravity.CENTER
             }
             iconBox.addView(icon, LinearLayout.LayoutParams(dp(64), dp(64)))
             val name = TextView(this@MainActivity).apply {
                 text = spec.name
-                textSize = 15f
+                textSize = 27f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(0xFF1C2333.toInt())
                 gravity = Gravity.CENTER
@@ -178,7 +173,7 @@ class MainActivity : Activity() {
             }
             val tag = TextView(this@MainActivity).apply {
                 text = spec.category.label + " · " + spec.desc
-                textSize = 11f
+                textSize = 22f
                 setTextColor(spec.color)
                 gravity = Gravity.CENTER
                 setPadding(dp(8), dp(3), dp(8), 0)

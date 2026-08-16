@@ -19,6 +19,8 @@ class SnakeBattleView(context: Context) : GameView(context) {
 
     private data class Pt(val x: Int, val y: Int)
 
+    private data class Btn(val rect: RectF, val dx: Int, val dy: Int, val label: String)
+
     private val body1 = ArrayDeque<Pt>()
     private val body2 = ArrayDeque<Pt>()
     private var dir1x = 1; private var dir1y = 0
@@ -41,6 +43,12 @@ class SnakeBattleView(context: Context) : GameView(context) {
     /** pointerId -> [zone(0上/1下), downX, downY]，支持双人同时滑动 */
     private val touchState = HashMap<Int, FloatArray>()
 
+    // 两位玩家各自的方向键（上/下半屏各一套）
+    private val pad1 = ArrayList<Btn>()
+    private val pad2 = ArrayList<Btn>()
+    private var padHint1Y = 0f
+    private var padHint2Y = 0f
+
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0x0DFFFFFF.toInt()
@@ -55,20 +63,68 @@ class SnakeBattleView(context: Context) : GameView(context) {
     private val zonePaint = Paint().apply { color = 0x0AFFFFFF.toInt() }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 24f
+        textSize = 41f
         color = 0xFF8A93A6.toInt()
+    }
+    private val padPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF2A3557.toInt()
+        style = Paint.Style.FILL
+    }
+    private val padStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF4A6CF7.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+    }
+    private val padTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        textSize = 46f
+        color = 0xFFFFFFFF.toInt()
     }
 
     override fun onLayout(w: Int, h: Int) {
-        cell = min(w / 16f, h / 26f)
+        val padH = dp(156)
+        val availH = h - padH * 2
+        cell = min(w / 16f, availH / 24f)
         cols = (w / cell).toInt().coerceAtMost(16)
-        rows = (h / cell).toInt()
+        rows = (availH / cell).toInt()
         boardLeft = (w - cols * cell) / 2f
-        boardTop = (h - rows * cell) / 2f
+        boardTop = padH + (availH - rows * cell) / 2f
+
+        // 上/下半屏各一套方向键（十字，紧凑尺寸）
+        pad1.clear()
+        pad2.clear()
+        val bs = dp(42)
+        val gap = dp(7)
+        fun makePad(list: ArrayList<Btn>, cx: Float, cy: Float) {
+            list.add(Btn(RectF(cx - bs / 2f, cy - bs - gap, cx + bs / 2f, cy - gap), 0, -1, "▲"))
+            list.add(Btn(RectF(cx - bs - gap - bs / 2f, cy - bs / 2f, cx - gap - bs / 2f, cy + bs / 2f), -1, 0, "◀"))
+            list.add(Btn(RectF(cx + gap + bs / 2f, cy - bs / 2f, cx + bs + gap + bs / 2f, cy + bs / 2f), 1, 0, "▶"))
+            list.add(Btn(RectF(cx - bs / 2f, cy + gap, cx + bs / 2f, cy + bs + gap), 0, 1, "▼"))
+        }
+        makePad(pad1, w / 2f, padH / 2f)
+        makePad(pad2, w / 2f, h - padH / 2f)
+        padHint1Y = padH / 2f
+        padHint2Y = h - padH / 2f
         reset()
     }
 
     override fun onTouch(event: MotionEvent) {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            for (b in pad1) {
+                if (b.rect.contains(event.x, event.y)) {
+                    setDir(0, b.dx, b.dy)
+                    playSound(SoundManager.MOVE)
+                    return
+                }
+            }
+            for (b in pad2) {
+                if (b.rect.contains(event.x, event.y)) {
+                    setDir(1, b.dx, b.dy)
+                    playSound(SoundManager.MOVE)
+                    return
+                }
+            }
+        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val idx = event.actionIndex
@@ -236,9 +292,25 @@ class SnakeBattleView(context: Context) : GameView(context) {
         }
         if (alive1) drawSnake(canvas, body1, head1Paint, body1Paint)
         if (alive2) drawSnake(canvas, body2, head2Paint, body2Paint)
-        labelPaint.textSize = 22f
-        canvas.drawText("玩家1（上半屏滑动" + (if (started1) "）" else "开始）"), width / 2f, dp(30).toFloat(), labelPaint)
-        canvas.drawText("玩家2（下半屏滑动" + (if (started2) "）" else "开始）"), width / 2f, height - dp(18).toFloat(), labelPaint)
+        // 两位玩家各自的方向键（提示文案在各自半屏左侧，避免压住按键）
+        labelPaint.textAlign = Paint.Align.LEFT
+        labelPaint.textSize = 31f
+        val lh = (labelPaint.ascent() + labelPaint.descent()) / 2f
+        canvas.drawText("玩家1 方向键", dp(20).toFloat(), padHint1Y - lh, labelPaint)
+        if (!started1) canvas.drawText("（滑动也行）", dp(20).toFloat(), padHint1Y - lh + dp(21).toFloat(), labelPaint)
+        canvas.drawText("玩家2 方向键", dp(20).toFloat(), padHint2Y - lh, labelPaint)
+        if (!started2) canvas.drawText("（滑动也行）", dp(20).toFloat(), padHint2Y - lh + dp(21).toFloat(), labelPaint)
+        labelPaint.textAlign = Paint.Align.CENTER
+        drawPad(canvas, pad1)
+        drawPad(canvas, pad2)
+    }
+
+    private fun drawPad(canvas: Canvas, pad: List<Btn>) {
+        for (b in pad) {
+            canvas.drawRoundRect(b.rect, dp(13).toFloat(), dp(13).toFloat(), padPaint)
+            canvas.drawRoundRect(b.rect, dp(13).toFloat(), dp(13).toFloat(), padStroke)
+            canvas.drawText(b.label, b.rect.centerX(), b.rect.centerY() - (padTextPaint.ascent() + padTextPaint.descent()) / 2f, padTextPaint)
+        }
     }
 
     override fun reset() {

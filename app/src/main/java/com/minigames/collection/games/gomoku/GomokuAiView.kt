@@ -49,12 +49,12 @@ class GomokuAiView(context: Context) : GameView(context) {
     private val markPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE8503A.toInt() }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 24f
+        textSize = 41f
         color = 0xFF8A93A6.toInt()
     }
     private val statusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 26f
+        textSize = 44f
         color = 0xFFE8EAF0.toInt()
     }
 

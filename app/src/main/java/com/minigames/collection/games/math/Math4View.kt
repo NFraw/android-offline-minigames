@@ -28,17 +28,17 @@ class Math4View(context: Context) : GameView(context) {
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val questionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 64f
+        textSize = 90f
         color = 0xFFE8EAF0.toInt()
     }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 20f
+        textSize = 36f
         color = 0xFF8A93A6.toInt()
     }
     private val scorePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 22f
+        textSize = 37f
         color = 0xFFE8EAF0.toInt()
     }
 

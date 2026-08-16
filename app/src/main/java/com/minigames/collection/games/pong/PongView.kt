@@ -9,12 +9,19 @@ import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
 import kotlin.math.abs
+import kotlin.math.hypot
 
 /** 乒乓 Pong：玩家1（上）与玩家2（下）各自在自己的半屏拖动球拍，先到 5 分获胜。 */
 class PongView(context: Context) : GameView(context) {
 
     companion object {
         private const val WIN_SCORE = 5
+        /** 初始球速（更快开局，避免拖拍拉锯） */
+        private const val BASE_SPEED = 620f
+        /** 碰撞加速的临界值 */
+        private const val MAX_SPEED = 2400f
+        /** 每次碰撞的加速系数 */
+        private const val ACCEL = 1.07f
     }
 
     private var p1y = 0f
@@ -47,7 +54,7 @@ class PongView(context: Context) : GameView(context) {
     }
     private val scorePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 30f
+        textSize = 46f
         color = 0xFFE8EAF0.toInt()
     }
 
@@ -121,7 +128,7 @@ class PongView(context: Context) : GameView(context) {
             ballY = topY + paddleH + ballR
             vy = abs(vy)
             vx = abs(vx) * 0.92f + (ballX - p1y) / (paddleW / 2f) * speed * 0.7f
-            speed = minOf(speed * 1.06f, 1500f)
+            boostVelocity()
             playSound(SoundManager.MOVE)
         }
         if (vy > 0 && ballY + ballR >= bottomY && ballY - ballR <= bottomY + paddleH &&
@@ -130,7 +137,7 @@ class PongView(context: Context) : GameView(context) {
             ballY = bottomY - ballR
             vy = -abs(vy)
             vx = abs(vx) * 0.92f + (ballX - p2y) / (paddleW / 2f) * speed * 0.7f
-            speed = minOf(speed * 1.06f, 1500f)
+            boostVelocity()
             playSound(SoundManager.MOVE)
         }
         // 出界得分
@@ -143,6 +150,15 @@ class PongView(context: Context) : GameView(context) {
             playSound(SoundManager.EAT)
             checkWin()
         }
+    }
+
+    /** 每次碰撞后球速整体提升，直到临界值 MAX_SPEED。 */
+    private fun boostVelocity() {
+        val cur = hypot(vx, vy)
+        if (cur <= 0f) return
+        val scale = minOf(cur * ACCEL, MAX_SPEED) / cur
+        vx *= scale
+        vy *= scale
     }
 
     private fun checkWin() {
@@ -170,7 +186,7 @@ class PongView(context: Context) : GameView(context) {
         s1 = 0
         s2 = 0
         over = false
-        speed = 420f
+        speed = BASE_SPEED
         p1y = width / 2f
         p2y = width / 2f
         resetBall()

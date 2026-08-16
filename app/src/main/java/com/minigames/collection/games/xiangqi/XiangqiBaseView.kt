@@ -2,10 +2,12 @@ package com.minigames.collection.games.xiangqi
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
+import android.graphics.Typeface
 import android.view.MotionEvent
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
@@ -45,66 +47,102 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
     private var boardLeft = 0f
     private var boardTop = 0f
     private var stoneR = 0f
-    protected val undoBtn = RectF()
+    private var topStripY = 0f
+    private var bottomStripY = 0f
+    /** 黑方（上方）/ 红方（下方）各自的悔棋按钮。 */
+    protected val undoBtnBlack = RectF()
+    protected val undoBtnRed = RectF()
     protected val resignBtn = RectF()
 
-    private val boardPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE8C68F.toInt() }
-    private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    /** 棋盘底板（木纹渐变，shader 在 onLayout 中赋值）。 */
+    private val boardBgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val boardFramePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        color = 0xFF6B3F1D.toInt()
+    }
+    private val boardInnerFramePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
         color = 0xFF8A5A2B.toInt()
-        strokeWidth = 2f
+    }
+    private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF7A4A1F.toInt()
+    }
+    private val riverPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        color = 0xFF7A4A1F.toInt()
+        typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
     }
     private val piecePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val pieceShadow = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x33000000.toInt() }
-    private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2f }
+    private val pieceShadow = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x40000000.toInt() }
+    private val pieceRimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        color = 0x668A5A2B.toInt()
+    }
+    private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val redTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFC63B3B.toInt()
+        color = 0xFFB02A2A.toInt()
         textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
     }
     private val blackTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF232833.toInt()
+        color = 0xFF20242E.toInt()
         textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
     }
+    private val selGlowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x33F5D547.toInt() }
     private val selPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFFF5D547.toInt()
         style = Paint.Style.STROKE
-        strokeWidth = 4f
     }
-    private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x66FFFFFF.toInt() }
+    private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x80E8EAF0.toInt() }
     private val capPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFE8503A.toInt()
+        color = 0xFFFF7A45.toInt()
         style = Paint.Style.STROKE
-        strokeWidth = 3f
     }
     private val statusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        textSize = 26f
-        color = 0xFFE8EAF0.toInt()
+        textAlign = Paint.Align.RIGHT
+        color = 0xFF8A93A6.toInt()
     }
-    private val btnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x88000000.toInt() }
+    private val btnBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xCC2A3557.toInt() }
+    private val btnBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        color = 0x406B8AFF.toInt()
+    }
     private val btnTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 24f
         color = 0xFFFFFFFF.toInt()
+        typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
     }
     private val warnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFFFF5252.toInt()
         style = Paint.Style.STROKE
-        strokeWidth = 5f
     }
-    private val pieceColors = intArrayOf(0xFFFBF1DE.toInt(), 0xFFE8CDA4.toInt(), 0xFFCFA970.toInt())
-    private val pieceStops = floatArrayOf(0f, 0.72f, 1f)
+    private val lastMarkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE8503A.toInt() }
+    private val lastMarkSoftPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x66E8503A.toInt() }
+    private val pieceColors = intArrayOf(0xFFFDF6E6.toInt(), 0xFFEFD9AC.toInt(), 0xFFD9B27B.toInt())
+    private val pieceStops = floatArrayOf(0f, 0.55f, 1f)
 
     override fun onLayout(w: Int, h: Int) {
-        val side = min(w * 0.97f, h * 0.72f)
-        cellX = side / (XiangqiRules.COLS - 1)
-        cellY = side / (XiangqiRules.ROWS - 1)
-        stoneR = min(cellX, cellY) * 0.43f
+        topStripY = dp(112).toFloat()
+        bottomStripY = h - topStripY
+        // 棋盘竖向居中，并保证边缘棋子不被上方/下方信息条遮挡
+        val maxSide = min(w * 0.9f, (h - 2 * topStripY - dp(32).toFloat()) / 1.0978f)
+        cellX = maxSide / (XiangqiRules.COLS - 1)
+        cellY = maxSide / (XiangqiRules.ROWS - 1)
+        stoneR = min(cellX, cellY) * 0.44f
         boardLeft = (w - cellX * (XiangqiRules.COLS - 1)) / 2f
-        boardTop = (h - cellY * (XiangqiRules.ROWS - 1)) / 2f + cellY * 0.6f
-        val bw = dp(92).toFloat()
-        val bh = dp(46).toFloat()
-        undoBtn.set(boardLeft, boardTop - cellY * 2.3f - bh / 2f, boardLeft + bw, boardTop - cellY * 2.3f + bh / 2f)
-        resignBtn.set(boardLeft + cellX * (XiangqiRules.COLS - 1) - bw, undoBtn.top, boardLeft + cellX * (XiangqiRules.COLS - 1), undoBtn.bottom)
+        boardTop = (h - cellY * (XiangqiRules.ROWS - 1)) / 2f
+        // 黑方（上）与红方（下）各自的悔棋按钮，与棋盘左缘对齐
+        val bw = dp(82).toFloat()
+        val bh = dp(34).toFloat()
+        undoBtnBlack.set(boardLeft, topStripY - bh / 2f, boardLeft + bw, topStripY + bh / 2f)
+        undoBtnRed.set(boardLeft, bottomStripY - bh / 2f, boardLeft + bw, bottomStripY + bh / 2f)
+        resignBtn.setEmpty()
+        // 棋盘木纹渐变（暖色木质）
+        boardBgPaint.shader = LinearGradient(
+            boardLeft, boardTop, boardLeft + maxSide, boardTop + maxSide,
+            intArrayOf(0xFFF6E4BD.toInt(), 0xFFEBD197.toInt(), 0xFFDBB477.toInt()),
+            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
         reset()
     }
 
@@ -112,8 +150,12 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
         if (event.action != MotionEvent.ACTION_DOWN || gameOverFlag || paused) return
         val x = event.x
         val y = event.y
-        if (undoBtn.contains(x, y)) {
-            onUndoRequested()
+        if (undoBtnBlack.contains(x, y)) {
+            requestUndo(XiangqiRules.BLACK)
+            return
+        }
+        if (undoBtnRed.contains(x, y)) {
+            requestUndo(XiangqiRules.RED)
             return
         }
         if (resignBtn.width() > 0 && resignBtn.contains(x, y)) {
@@ -204,6 +246,11 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
         undo()
     }
 
+    /** 玩家点击己方悔棋按钮（side 为请求方）。双人版在此弹出对方同意确认。 */
+    protected open fun requestUndo(side: Int) {
+        onUndoRequested()
+    }
+
     protected open fun onResignRequested() {
         gameOverFlag = true
         playSound(SoundManager.LOSE)
@@ -253,32 +300,48 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
 
     private fun drawPieceAt(canvas: Canvas, p: Int, cx: Float, cy: Float) {
         val isRed = XiangqiRules.sideOf(p) == XiangqiRules.RED
-        // 阴影
-        canvas.drawCircle(cx + dp(2).toFloat(), cy + dp(2).toFloat(), stoneR, pieceShadow)
-        // 渐变底
-        canvas.save()
-        canvas.translate(cx - stoneR, cy - stoneR)
-        val shader = RadialGradient(stoneR, stoneR * 0.3f, stoneR * 1.35f, pieceColors, pieceStops, Shader.TileMode.CLAMP)
-        piecePaint.shader = shader
-        canvas.drawCircle(stoneR, stoneR, stoneR, piecePaint)
-        canvas.restore()
-        // 描边
-        borderPaint.color = if (isRed) 0xFFA93232.toInt() else 0xFF2A2F3A.toInt()
+        // 投影（向下柔化）
+        canvas.drawCircle(cx + dp(2).toFloat(), cy + dp(3).toFloat(), stoneR, pieceShadow)
+        // 奶油色棋子底（高光偏左上，径向渐变）
+        piecePaint.shader = RadialGradient(
+            cx - stoneR * 0.35f, cy - stoneR * 0.4f, stoneR * 1.25f,
+            pieceColors, pieceStops, Shader.TileMode.CLAMP)
+        canvas.drawCircle(cx, cy, stoneR, piecePaint)
+        // 内圈环线（传统棋子样式）
+        pieceRimPaint.strokeWidth = dp(1).toFloat()
+        canvas.drawCircle(cx, cy, stoneR * 0.8f, pieceRimPaint)
+        // 外描边
+        borderPaint.strokeWidth = dp(2).toFloat()
+        borderPaint.color = if (isRed) 0xFFB3402F.toInt() else 0xFF2A2F3A.toInt()
         canvas.drawCircle(cx, cy, stoneR, borderPaint)
-        // 汉字（带一点阴影增强立体感）
+        // 汉字（衬线粗体 + 阴影）；黑方棋子字面朝上，与上方玩家对向
         val tp = if (isRed) redTextPaint else blackTextPaint
-        tp.textSize = stoneR * 1.12f
-        canvas.drawText(XiangqiRules.pieceName(p), cx + 1f, cy + 1f - (tp.descent() + tp.ascent()) / 2f, pieceShadow)
-        canvas.drawText(XiangqiRules.pieceName(p), cx, cy - (tp.descent() + tp.ascent()) / 2f, tp)
+        tp.textSize = stoneR * 1.08f
+        val facingUp = !isRed
+        drawPieceText(canvas, pieceShadow, XiangqiRules.pieceName(p), cx + 1f, cy + 2f, facingUp)
+        drawPieceText(canvas, tp, XiangqiRules.pieceName(p), cx, cy, facingUp)
     }
 
     override fun drawGame(canvas: Canvas) {
         canvas.drawColor(0xFF141A2E.toInt())
-        val left = boardLeft - cellX * 0.5f
-        val top = boardTop - cellY * 0.5f
-        val right = boardLeft + (XiangqiRules.COLS - 1) * cellX + cellX * 0.5f
-        val bottom = boardTop + (XiangqiRules.ROWS - 1) * cellY + cellY * 0.5f
-        canvas.drawRoundRect(RectF(left, top, right, bottom), cellX * 0.35f, cellX * 0.35f, boardPaint)
+        // 木纹棋盘底板：圆角木板 + 双层描边
+        val pad = dp(8).toFloat()
+        val left = boardLeft - cellX * 0.5f - pad
+        val top = boardTop - cellY * 0.5f - pad
+        val right = boardLeft + (XiangqiRules.COLS - 1) * cellX + cellX * 0.5f + pad
+        val bottom = boardTop + (XiangqiRules.ROWS - 1) * cellY + cellY * 0.5f + pad
+        val radius = cellX * 0.28f
+        canvas.drawRoundRect(RectF(left, top, right, bottom), radius, radius, boardBgPaint)
+        boardFramePaint.strokeWidth = dp(3).toFloat()
+        canvas.drawRoundRect(RectF(left, top, right, bottom), radius, radius, boardFramePaint)
+        boardInnerFramePaint.strokeWidth = dp(1).toFloat()
+        val inPad = dp(5).toFloat()
+        canvas.drawRoundRect(
+            RectF(left + inPad, top + inPad, right - inPad, bottom - inPad),
+            radius * 0.8f, radius * 0.8f, boardInnerFramePaint)
+
+        // 网格线（楚河汉界处纵向断开）
+        linePaint.strokeWidth = dp(1).toFloat()
         for (r in 0 until XiangqiRules.ROWS) {
             canvas.drawLine(boardLeft, boardTop + r * cellY, boardLeft + (XiangqiRules.COLS - 1) * cellX, boardTop + r * cellY, linePaint)
         }
@@ -286,14 +349,15 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
             canvas.drawLine(boardLeft + c * cellX, boardTop, boardLeft + c * cellX, boardTop + 4 * cellY, linePaint)
             canvas.drawLine(boardLeft + c * cellX, boardTop + 5 * cellY, boardLeft + c * cellX, boardTop + 9 * cellY, linePaint)
         }
+        // 九宫斜线
         canvas.drawLine(boardLeft + 3 * cellX, boardTop, boardLeft + 5 * cellX, boardTop + 2 * cellY, linePaint)
         canvas.drawLine(boardLeft + 5 * cellX, boardTop, boardLeft + 3 * cellX, boardTop + 2 * cellY, linePaint)
         canvas.drawLine(boardLeft + 3 * cellX, boardTop + 7 * cellY, boardLeft + 5 * cellX, boardTop + 9 * cellY, linePaint)
         canvas.drawLine(boardLeft + 5 * cellX, boardTop + 7 * cellY, boardLeft + 3 * cellX, boardTop + 9 * cellY, linePaint)
-        linePaint.textAlign = Paint.Align.CENTER
-        linePaint.textSize = cellY * 0.4f
-        canvas.drawText("楚  河", boardLeft + 2 * cellX, boardTop + 4.5f * cellY - cellY * 0.1f, linePaint)
-        canvas.drawText("汉  界", boardLeft + 6 * cellX, boardTop + 4.5f * cellY - cellY * 0.1f, linePaint)
+        // 楚河汉界
+        riverPaint.textSize = cellY * 0.42f
+        canvas.drawText("楚  河", boardLeft + 2 * cellX, boardTop + 4.5f * cellY - cellY * 0.12f, riverPaint)
+        canvas.drawText("汉  界", boardLeft + 6 * cellX, boardTop + 4.5f * cellY - cellY * 0.12f, riverPaint)
 
         // 棋子
         for (r in 0 until XiangqiRules.ROWS) for (c in 0 until XiangqiRules.COLS) {
@@ -314,21 +378,25 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
             }
         }
 
-        // 选中高亮 + 合法走法
+        // 选中棋子：柔光 + 亮边
         if (selected >= 0) {
+            canvas.drawCircle(px(selected), py(selected), stoneR + dp(8).toFloat(), selGlowPaint)
+            selPaint.strokeWidth = dp(2).toFloat()
             canvas.drawCircle(px(selected), py(selected), stoneR + dp(3).toFloat(), selPaint)
         }
+        // 合法走法提示（空位圆点 / 吃子红圈）
+        capPaint.strokeWidth = dp(2).toFloat()
         for (t in legalTargets) {
             if (board[t] == XiangqiRules.EMPTY) {
-                canvas.drawCircle(px(t), py(t), stoneR * 0.2f, hintPaint)
+                canvas.drawCircle(px(t), py(t), stoneR * 0.18f, hintPaint)
             } else {
                 canvas.drawCircle(px(t), py(t), stoneR, capPaint)
             }
         }
         // 最后一步标记
         if (lastFrom >= 0) {
-            canvas.drawCircle(px(lastFrom), py(lastFrom), cellX * 0.07f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x66E8503A.toInt() })
-            canvas.drawCircle(px(lastTo), py(lastTo), cellX * 0.07f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE8503A.toInt() })
+            canvas.drawCircle(px(lastFrom), py(lastFrom), cellX * 0.06f, lastMarkSoftPaint)
+            canvas.drawCircle(px(lastTo), py(lastTo), cellX * 0.06f, lastMarkPaint)
         }
         // 将军警示（脉冲红圈）
         if (!gameOverFlag && XiangqiRules.isInCheck(board, turn)) {
@@ -337,51 +405,81 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
             if (ki >= 0) {
                 val pulse = (Math.sin(System.currentTimeMillis() / 280.0) * 0.5 + 0.5).toFloat()
                 warnPaint.alpha = (90 + 165 * pulse).toInt()
+                warnPaint.strokeWidth = dp(3).toFloat()
                 canvas.drawCircle(px(ki), py(ki), stoneR + 4f, warnPaint)
             }
         }
 
-        // 状态文字
-        statusPaint.textSize = 26f
-        canvas.drawText(statusText, width / 2f, boardTop - cellY * 1.45f, statusPaint)
-        statusPaint.textSize = 22f
-        statusPaint.color = 0xFF8A93A6.toInt()
-        canvas.drawText(getStatusLine(), width / 2f, boardTop - cellY * 0.95f, statusPaint)
+        // 中央回合状态行（如"黑方回合 · 将军！"）
+        statusPaint.textAlign = Paint.Align.CENTER
         statusPaint.color = 0xFFE8EAF0.toInt()
+        statusPaint.textSize = dp(15).toFloat()
+        canvas.drawText(getStatusLine(), width / 2f, boardTop - cellY * 0.6f, statusPaint)
 
-        // 吃子列表（顶部一行小棋子：左黑右红）
-        val miniR = cellY * 0.26f
-        val gap = cellY * 0.62f
-        val baseY = boardTop - cellY * 0.55f
-        val totalW = maxOf(capturedRed.size, capturedBlack.size).toFloat() * gap
-        var sx = width / 2f - totalW / 2f + miniR
-        for (i in capturedRed.indices) {
-            drawMini(canvas, capturedRed[i], sx + i * gap, baseY, miniR)
-        }
-        for (i in capturedBlack.indices) {
-            drawMini(canvas, capturedBlack[i], sx + i * gap, baseY, miniR)
+        // 双方信息条：悔棋按钮 + 本侧吃子列表 + 侧名
+        drawPlayerStrip(canvas, XiangqiRules.BLACK, topStripY, undoBtnBlack)
+        drawPlayerStrip(canvas, XiangqiRules.RED, bottomStripY, undoBtnRed)
+    }
+
+    /** 玩家信息条：左侧悔棋按钮，中部本侧吃掉的对方棋子，右侧侧名与回合指示点。 */
+    private fun drawPlayerStrip(canvas: Canvas, side: Int, stripY: Float, undoBtn: RectF) {
+        // 悔棋按钮
+        canvas.drawRoundRect(undoBtn, dp(13).toFloat(), dp(13).toFloat(), btnBgPaint)
+        btnBorderPaint.strokeWidth = dp(1).toFloat()
+        canvas.drawRoundRect(undoBtn, dp(13).toFloat(), dp(13).toFloat(), btnBorderPaint)
+        canvas.drawText(
+            "↶ 悔棋", undoBtn.centerX(),
+            undoBtn.centerY() - (btnTextPaint.descent() + btnTextPaint.ascent()) / 2f, btnTextPaint)
+
+        // 吃子列表（本侧吃掉的对方棋子，按吃子先后排列，居中于按钮与侧名之间）
+        val captured = if (side == XiangqiRules.RED) capturedRed else capturedBlack
+        val leftBound = undoBtn.right + dp(6).toFloat()
+        val rightBound = boardLeft + (XiangqiRules.COLS - 1) * cellX - dp(64).toFloat()
+        val availW = rightBound - leftBound
+        if (availW > 0 && captured.isNotEmpty()) {
+            val gap = minOf(cellY * 0.6f, availW / captured.size)
+            val miniR = minOf(cellY * 0.26f, gap * 0.5f)
+            val totalW = (captured.size - 1) * gap
+            var sx = (leftBound + rightBound) / 2f - totalW / 2f
+            for (i in captured.indices) {
+                drawMini(canvas, captured[i], sx, stripY, miniR, facingUp = side == XiangqiRules.BLACK)
+                sx += gap
+            }
         }
 
-        // 悔棋 / 认输按钮
-        canvas.drawRoundRect(undoBtn, dp(12).toFloat(), dp(12).toFloat(), btnPaint)
-        canvas.drawText("↶ 悔棋", undoBtn.centerX(), undoBtn.centerY() - (btnTextPaint.descent() + btnTextPaint.ascent()) / 2f, btnTextPaint)
-        if (showResignButton()) {
-            canvas.drawRoundRect(resignBtn, dp(12).toFloat(), dp(12).toFloat(), btnPaint)
-            canvas.drawText("认输", resignBtn.centerX(), resignBtn.centerY() - (btnTextPaint.descent() + btnTextPaint.ascent()) / 2f, btnTextPaint)
+        // 右侧侧名 + 回合指示点
+        val isTurn = (turn == side) && !gameOverFlag
+        val inCheck = !gameOverFlag && XiangqiRules.isInCheck(board, side)
+        statusPaint.textAlign = Paint.Align.RIGHT
+        statusPaint.textSize = dp(14).toFloat()
+        statusPaint.color = when {
+            inCheck -> 0xFFFF5252.toInt()
+            isTurn -> 0xFFE8EAF0.toInt()
+            else -> 0xFF8A93A6.toInt()
+        }
+        val label = XiangqiRules.sideName(side) + if (inCheck) " · 将军" else ""
+        val tx = boardLeft + (XiangqiRules.COLS - 1) * cellX - dp(8).toFloat()
+        canvas.drawText(label, tx, stripY - (statusPaint.descent() + statusPaint.ascent()) / 2f, statusPaint)
+        if (isTurn) {
+            val dotR = dp(4).toFloat()
+            val dotX = tx - statusPaint.measureText(label) - dp(10).toFloat()
+            canvas.drawCircle(dotX, stripY, dotR, statusPaint)
         }
     }
 
-    private fun drawMini(canvas: Canvas, p: Int, cx: Float, cy: Float, r: Float) {
+    private fun drawMini(canvas: Canvas, p: Int, cx: Float, cy: Float, r: Float, facingUp: Boolean) {
         val isRed = XiangqiRules.sideOf(p) == XiangqiRules.RED
-        canvas.drawCircle(cx, cy, r, pieceShadow)
-        val shader = RadialGradient(cx, cy - r * 0.3f, r * 1.3f, pieceColors, pieceStops, Shader.TileMode.CLAMP)
-        piecePaint.shader = shader
+        canvas.drawCircle(cx + dp(1).toFloat(), cy + dp(1).toFloat(), r, pieceShadow)
+        piecePaint.shader = RadialGradient(cx, cy - r * 0.3f, r * 1.3f, pieceColors, pieceStops, Shader.TileMode.CLAMP)
         canvas.drawCircle(cx, cy, r, piecePaint)
+        pieceRimPaint.strokeWidth = dp(1).toFloat()
+        canvas.drawCircle(cx, cy, r * 0.75f, pieceRimPaint)
+        borderPaint.strokeWidth = dp(1).toFloat()
         borderPaint.color = if (isRed) 0xFFA93232.toInt() else 0xFF2A2F3A.toInt()
         canvas.drawCircle(cx, cy, r, borderPaint)
         val tp = if (isRed) redTextPaint else blackTextPaint
-        tp.textSize = r * 1.5f
-        canvas.drawText(XiangqiRules.pieceName(p), cx, cy - (tp.descent() + tp.ascent()) / 2f, tp)
+        tp.textSize = r * 1.35f
+        drawPieceText(canvas, tp, XiangqiRules.pieceName(p), cx, cy, facingUp)
     }
 
     protected open fun showResignButton(): Boolean = false

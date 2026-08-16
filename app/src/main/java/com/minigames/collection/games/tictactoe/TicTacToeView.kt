@@ -47,7 +47,7 @@ class TicTacToeView(context: Context) : GameView(context) {
     }
     private val turnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 26f
+        textSize = 44f
         color = 0xFF8A93A6.toInt()
     }
 

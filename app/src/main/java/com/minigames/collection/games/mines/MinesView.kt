@@ -26,6 +26,7 @@ class MinesView(context: Context) : GameView(context) {
     private val revealed = BooleanArray(COLS * ROWS)
     private val flagged = BooleanArray(COLS * ROWS)
     private var firstTap = true
+    private var minesPlaced = false
     private var over = false
     private var time = 0f
     private var revealedCount = 0
@@ -48,7 +49,7 @@ class MinesView(context: Context) : GameView(context) {
     private val numPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 26f
+        textSize = 44f
         color = 0xFF8A93A6.toInt()
     }
     private val bombPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
@@ -97,14 +98,7 @@ class MinesView(context: Context) : GameView(context) {
         if (idx < 0 || revealed[idx] || flagged[idx] || over) return
         if (firstTap) {
             firstTap = false
-            // 首次点击必安全：若踩雷则把雷移走
-            if (grid[idx] == MINE) {
-                grid[idx] = 0
-                val empty = grid.indices.filter { it != idx && grid[it] != MINE }.toMutableList()
-                val newMine = empty.random()
-                grid[newMine] = MINE
-                computeCounts()
-            }
+            placeMinesAround(idx)
         }
         reveal(idx)
     }
@@ -121,6 +115,46 @@ class MinesView(context: Context) : GameView(context) {
             }
             grid[i] = n
         }
+    }
+
+    /**
+     * 首击后生成雷区：雷不会出现在首击格及其 8 邻域，
+     * 并重试若干次让首击格尽量翻开一片 0 区域（保证开局体验）。
+     */
+    private fun placeMinesAround(safeIdx: Int) {
+        val safe = HashSet<Int>()
+        safe.add(safeIdx)
+        val r = safeIdx / COLS
+        val c = safeIdx % COLS
+        for (dr in -1..1) for (dc in -1..1) {
+            val nr = r + dr
+            val nc = c + dc
+            if (nr in 0 until ROWS && nc in 0 until COLS) safe.add(nr * COLS + nc)
+        }
+        var opened = false
+        for (attempt in 0 until 30) {
+            for (i in grid.indices) grid[i] = 0
+            val candidates = grid.indices.filter { it !in safe }
+            var placed = 0
+            while (placed < MINES) {
+                val i = candidates.random()
+                if (grid[i] != MINE) { grid[i] = MINE; placed++ }
+            }
+            computeCounts()
+            if (grid[safeIdx] == 0) { opened = true; break }
+        }
+        if (!opened) {
+            // 兜底：不要求首击为 0，仅保证安全邻域
+            for (i in grid.indices) grid[i] = 0
+            val candidates = grid.indices.filter { it !in safe }
+            var placed = 0
+            while (placed < MINES) {
+                val i = candidates.random()
+                if (grid[i] != MINE) { grid[i] = MINE; placed++ }
+            }
+            computeCounts()
+        }
+        minesPlaced = true
     }
 
     private fun reveal(idx: Int) {
@@ -190,16 +224,8 @@ class MinesView(context: Context) : GameView(context) {
         for (i in grid.indices) grid[i] = 0
         for (i in revealed.indices) revealed[i] = false
         for (i in flagged.indices) flagged[i] = false
-        var placed = 0
-        while (placed < MINES) {
-            val i = (0 until COLS * ROWS).random()
-            if (grid[i] != MINE) {
-                grid[i] = MINE
-                placed++
-            }
-        }
-        computeCounts()
         firstTap = true
+        minesPlaced = false
         over = false
         time = 0f
         revealedCount = 0

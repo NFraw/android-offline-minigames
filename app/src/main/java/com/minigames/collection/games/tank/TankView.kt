@@ -36,7 +36,7 @@ class TankView(context: Context) : GameView(context) {
     private val shellPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF5D547.toInt() }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 24f
+        textSize = 41f
         color = 0xFFE8EAF0.toInt()
     }
 

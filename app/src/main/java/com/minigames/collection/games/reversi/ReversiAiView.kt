@@ -52,7 +52,7 @@ class ReversiAiView(context: Context) : GameView(context) {
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x66FFFFFF.toInt() }
     private val turnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 24f
+        textSize = 41f
         color = 0xFF8A93A6.toInt()
     }
 

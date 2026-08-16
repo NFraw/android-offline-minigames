@@ -12,10 +12,12 @@ import com.minigames.collection.common.SoundManager
 import kotlin.math.max
 import kotlin.math.min
 
-/** 贪吃蛇：滑动控制方向，吃到食物变长加速，撞墙/咬到自己结束。 */
+/** 贪吃蛇：屏幕滑动或下方方向键控制，吃到食物变长加速，撞墙/咬到自己结束（边界墙清晰可见）。 */
 class SnakeGameView(context: Context) : GameView(context) {
 
     private data class Pt(val x: Int, val y: Int)
+
+    private data class Btn(val rect: RectF, val dx: Int, val dy: Int, val label: String)
 
     private val body = ArrayDeque<Pt>()
     private var dirX = 1
@@ -33,6 +35,12 @@ class SnakeGameView(context: Context) : GameView(context) {
     private var cell = 0f
     private var boardLeft = 0f
     private var boardTop = 0f
+    private var boardW = 0f
+    private var boardH = 0f
+
+    // 方向键（下排控制区）
+    private val padBtns = ArrayList<Btn>()
+    private var padAreaTop = 0f
 
     private val gesture = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
@@ -51,23 +59,68 @@ class SnakeGameView(context: Context) : GameView(context) {
         style = Paint.Style.STROKE
         strokeWidth = 1f
     }
+    private val wallFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3A4668.toInt() }
+    private val wallPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFE8EAF0.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+    }
     private val headPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF6C8BFF.toInt() }
     private val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF4A6CF7.toInt() }
     private val foodPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFF5252.toInt() }
     private val eyePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt() }
+    private val padPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF2A3557.toInt()
+        style = Paint.Style.FILL
+    }
+    private val padStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF4A6CF7.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+    }
+    private val padTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        textSize = 53f
+        color = 0xFFFFFFFF.toInt()
+    }
 
     override fun onLayout(w: Int, h: Int) {
+        val padH = dp(150)
+        val availH = h - padH
         val cellByW = w / 16f
-        val cellByH = h / 28f
+        val cellByH = availH / 24f
         cell = max(10f, min(cellByW, cellByH))
         cols = (w / cell).toInt().coerceAtMost(16)
-        rows = (h / cell).toInt()
-        boardLeft = (w - cols * cell) / 2f
-        boardTop = (h - rows * cell) / 2f
+        rows = (availH / cell).toInt().coerceAtLeast(8)
+        boardW = cols * cell
+        boardH = rows * cell
+        boardLeft = (w - boardW) / 2f
+        boardTop = (availH - boardH) / 2f
+        padAreaTop = (h - padH).toFloat()
+
+        // 方向键布局（十字）
+        padBtns.clear()
+        val bs = dp(62)
+        val gap = dp(12)
+        val cx = w / 2f
+        val cy = padAreaTop + dp(62)
+        padBtns.add(Btn(RectF(cx - bs / 2f, cy - bs - gap, cx + bs / 2f, cy - gap), 0, -1, "▲"))
+        padBtns.add(Btn(RectF(cx - bs - gap - bs / 2f, cy - bs / 2f, cx - gap - bs / 2f, cy + bs / 2f), -1, 0, "◀"))
+        padBtns.add(Btn(RectF(cx + gap + bs / 2f, cy - bs / 2f, cx + bs + gap + bs / 2f, cy + bs / 2f), 1, 0, "▶"))
+        padBtns.add(Btn(RectF(cx - bs / 2f, cy + gap, cx + bs / 2f, cy + bs + gap), 0, 1, "▼"))
         reset()
     }
 
     override fun onTouch(event: MotionEvent) {
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            for (b in padBtns) {
+                if (b.rect.contains(event.x, event.y)) {
+                    setDir(b.dx, b.dy)
+                    playSound(SoundManager.MOVE)
+                    return
+                }
+            }
+        }
         gesture.onTouchEvent(event)
     }
 
@@ -132,20 +185,34 @@ class SnakeGameView(context: Context) : GameView(context) {
 
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 28f
+        textSize = 46f
+        color = 0xFF8A93A6.toInt()
+    }
+    private val padHintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        textSize = 32f
         color = 0xFF8A93A6.toInt()
     }
 
     override fun drawGame(canvas: Canvas) {
         canvas.drawRect(gameRect, bgPaint)
         if (!started) {
-            canvas.drawText("👆 滑动屏幕开始", width / 2f, boardTop + rows * cell / 2f, hintPaint)
+            canvas.drawText("👆 滑动屏幕或点击下方方向键开始", width / 2f, boardTop + boardH / 2f, hintPaint)
         }
+        // 边界墙（清晰可见：外圈填充 + 亮色描边）
+        val wallMargin = dp(5)
+        canvas.drawRoundRect(
+            RectF(boardLeft - wallMargin, boardTop - wallMargin, boardLeft + boardW + wallMargin, boardTop + boardH + wallMargin),
+            dp(10).toFloat(), dp(10).toFloat(), wallFillPaint)
+        canvas.drawRoundRect(
+            RectF(boardLeft - wallMargin, boardTop - wallMargin, boardLeft + boardW + wallMargin, boardTop + boardH + wallMargin),
+            dp(10).toFloat(), dp(10).toFloat(), wallPaint)
+        // 网格
         for (x in 0..cols) {
-            canvas.drawLine(boardLeft + x * cell, boardTop, boardLeft + x * cell, boardTop + rows * cell, gridPaint)
+            canvas.drawLine(boardLeft + x * cell, boardTop, boardLeft + x * cell, boardTop + boardH, gridPaint)
         }
         for (y in 0..rows) {
-            canvas.drawLine(boardLeft, boardTop + y * cell, boardLeft + cols * cell, boardTop + y * cell, gridPaint)
+            canvas.drawLine(boardLeft, boardTop + y * cell, boardLeft + boardW, boardTop + y * cell, gridPaint)
         }
         // 食物
         canvas.drawCircle(
@@ -169,6 +236,13 @@ class SnakeGameView(context: Context) : GameView(context) {
             val py = if (dirY != 0) 0f else cell * 0.15f
             canvas.drawCircle(hx + ex - px, hy + ey - py, cell * 0.09f, eyePaint)
             canvas.drawCircle(hx + ex + px, hy + ey + py, cell * 0.09f, eyePaint)
+        }
+        // 方向键
+        canvas.drawText("方向键（也可滑动屏幕）", width / 2f, padAreaTop + dp(14).toFloat(), padHintPaint)
+        for (b in padBtns) {
+            canvas.drawRoundRect(b.rect, dp(14).toFloat(), dp(14).toFloat(), padPaint)
+            canvas.drawRoundRect(b.rect, dp(14).toFloat(), dp(14).toFloat(), padStroke)
+            canvas.drawText(b.label, b.rect.centerX(), b.rect.centerY() - (padTextPaint.ascent() + padTextPaint.descent()) / 2f, padTextPaint)
         }
     }
 

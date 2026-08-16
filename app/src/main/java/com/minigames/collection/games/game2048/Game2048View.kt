@@ -34,7 +34,7 @@ class Game2048View(context: Context) : GameView(context) {
     }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 26f
+        textSize = 44f
         color = 0xFFF5B971.toInt()
     }
 

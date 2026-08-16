@@ -35,7 +35,7 @@ class SettingsActivity : Activity() {
         }
         bar.addView(TextView(this).apply {
             text = "‹"
-            textSize = 28f
+            textSize = 48f
             gravity = Gravity.CENTER
             setTextColor(0xFF4A6CF7.toInt())
             background = rounded(0xFFEDF0FF.toInt(), dp(12).toFloat())
@@ -43,7 +43,7 @@ class SettingsActivity : Activity() {
         }, LinearLayout.LayoutParams(dp(46), dp(44)))
         bar.addView(TextView(this).apply {
             text = "设置"
-            textSize = 17f
+            textSize = 31f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(0xFF1C2333.toInt())
             gravity = Gravity.CENTER
@@ -67,7 +67,7 @@ class SettingsActivity : Activity() {
         // 清空最高分
         val clearBtn = TextView(this).apply {
             text = "🗑 清空所有最高分"
-            textSize = 15f
+            textSize = 27f
             gravity = Gravity.CENTER
             setTextColor(0xFFE8503A.toInt())
             background = rounded(0xFFFFECEA.toInt(), dp(14).toFloat())
@@ -90,8 +90,8 @@ class SettingsActivity : Activity() {
 
         // 版本信息
         root.addView(TextView(this).apply {
-            text = "迷你游戏合集 v1.1.0 · 纯离线运行 · 无需任何权限"
-            textSize = 12f
+            text = "迷你游戏合集 v1.6.0 · 纯离线运行 · 无需任何权限"
+            textSize = 24f
             gravity = Gravity.CENTER
             setTextColor(0xFF8A93A6.toInt())
             setPadding(0, dp(28), 0, 0)
@@ -117,13 +117,13 @@ class SettingsActivity : Activity() {
         }
         textCol.addView(TextView(this).apply {
             text = title
-            textSize = 15f
+            textSize = 27f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(0xFF1C2333.toInt())
         })
         textCol.addView(TextView(this).apply {
             text = subtitle
-            textSize = 12f
+            textSize = 24f
             setTextColor(0xFF8A93A6.toInt())
             setPadding(0, dp(3), 0, 0)
         })

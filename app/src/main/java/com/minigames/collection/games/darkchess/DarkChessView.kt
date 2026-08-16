@@ -52,7 +52,7 @@ class DarkChessView(context: Context) : GameView(context) {
     }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 22f
+        textSize = 37f
         color = 0xFF8A93A6.toInt()
     }
 
@@ -73,10 +73,10 @@ class DarkChessView(context: Context) : GameView(context) {
             // 翻开
             revealed[idx] = true
             playSound(SoundManager.CLICK)
-            // 翻开兵（卒）即可吃帅（将）
             selected = -1
             checkEnd()
             if (!over) turn = 1 - turn
+            if (!over) checkStalemate()
             invalidate()
             return
         }
@@ -111,6 +111,7 @@ class DarkChessView(context: Context) : GameView(context) {
                 playSound(if (p != 0) SoundManager.EAT else SoundManager.MOVE)
                 checkEnd()
                 if (!over) turn = 1 - turn
+                if (!over) checkStalemate()
             } else {
                 selected = -1
                 playSound(SoundManager.LOSE)
@@ -144,11 +145,11 @@ class DarkChessView(context: Context) : GameView(context) {
         return ar >= tr
     }
 
+    /** 吃光判定：统计棋盘上所有存活子（含未翻开的暗子），任一方为 0 即对方吃光获胜。 */
     private fun checkEnd() {
         var redCount = 0
         var blackCount = 0
         for (i in board.indices) {
-            if (!revealed[i]) continue
             if (board[i] > 0) redCount++
             else if (board[i] < 0) blackCount++
         }
@@ -158,6 +159,37 @@ class DarkChessView(context: Context) : GameView(context) {
             playSound(SoundManager.WIN)
             gameOver(GameResult(0, redWin, (if (redWin) "红方" else "黑方") + "吃光对方获胜！"))
         }
+    }
+
+    /** 当前回合方若既无暗子可翻、又无明子可走，则判负。 */
+    private fun checkStalemate() {
+        if (hasAnyMove(turn)) return
+        over = true
+        val winner = 1 - turn
+        playSound(SoundManager.WIN)
+        gameOver(GameResult(0, winner == 0, (if (winner == 0) "红方" else "黑方") + "获胜！" + (if (turn == 0) "红方" else "黑方") + "无子可动"))
+    }
+
+    /** 某方是否还能走棋：有暗子可翻，或有明子可走到相邻空格/可吃子。 */
+    private fun hasAnyMove(side: Int): Boolean {
+        for (i in board.indices) {
+            if (!revealed[i]) return true
+        }
+        for (i in board.indices) {
+            if (!revealed[i] || board[i] == 0 || side(board[i]) != side) continue
+            val x = i % COLS
+            val y = i / COLS
+            if (x > 0 && canMoveFrom(i, i - 1)) return true
+            if (x < COLS - 1 && canMoveFrom(i, i + 1)) return true
+            if (y > 0 && canMoveFrom(i, i - COLS)) return true
+            if (y < ROWS - 1 && canMoveFrom(i, i + COLS)) return true
+        }
+        return false
+    }
+
+    private fun canMoveFrom(from: Int, to: Int): Boolean {
+        val t = board[to]
+        return t == 0 || (revealed[to] && side(t) != side(board[from]) && canCapture(board[from], t))
     }
 
     override fun update(dt: Float) {}
@@ -177,7 +209,7 @@ class DarkChessView(context: Context) : GameView(context) {
                 if (p != 0) {
                     textPaint.color = if (p > 0) redPaint.color else blackPaint.color
                     textPaint.textSize = cell * 0.5f
-                    canvas.drawText(NAMES[p] ?: "", x + cell / 2f, y + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
+                    drawPieceText(canvas, textPaint, NAMES[p] ?: "", x + cell / 2f, y + cell / 2f, p < 0)
                 }
             }
             if (idx == selected) {
@@ -185,7 +217,7 @@ class DarkChessView(context: Context) : GameView(context) {
             }
         }
         textPaint.color = 0xFF8A93A6.toInt()
-        textPaint.textSize = 20f
+        textPaint.textSize = 36f
         canvas.drawText((if (turn == 0) "红方" else "黑方") + "回合 · 点击翻开棋子，走相邻格吃子（大小：帅将>仕士>相象>车>马>炮>兵卒，兵卒吃帅将）", width / 2f, boardTop + cell * ROWS + dp(26).toFloat(), textPaint)
     }
 

@@ -26,6 +26,7 @@ class SudokuView(context: Context) : GameView(context) {
     private var boardLeft = 0f
     private var boardTop = 0f
     private var over = false
+    private val numBtns = ArrayList<RectF>()
 
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val cellPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1E2740.toInt() }
@@ -43,10 +44,20 @@ class SudokuView(context: Context) : GameView(context) {
     private val numPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
 
     override fun onLayout(w: Int, h: Int) {
-        val side = min(w, h) * 0.92f
+        // 棋盘 + 下方数字面板合计 10 个格子高度，须整体放入屏幕
+        val side = min(w * 0.92f, h * 0.86f)
         cell = side / N
         boardLeft = (w - side) / 2f
-        boardTop = (h - side) / 2f + cell * 0.3f
+        boardTop = (h - side - cell * 1.05f) / 2f
+        // 数字面板按钮：9 个圆角方块，横向铺满棋盘宽度
+        numBtns.clear()
+        val gap = dp(4).toFloat()
+        val y0 = boardTop + cell * N + cell * 0.18f
+        val btnH = cell * 0.62f
+        val btnW = (side - gap * 8) / 9f
+        for (n in 0 until N) {
+            numBtns.add(RectF(boardLeft + n * (btnW + gap), y0, boardLeft + n * (btnW + gap) + btnW, y0 + btnH))
+        }
         reset()
     }
 
@@ -65,15 +76,16 @@ class SudokuView(context: Context) : GameView(context) {
             invalidate()
             return
         }
-        // 数字面板点击（底部 1~9）
-        if (event.y > boardTop + cell * N + dp(6).toFloat()) {
-            val btnW = width / 9f
-            val n = (event.x / btnW).toInt() + 1
-            if (n in 1..9 && selected >= 0 && !fixed[selected]) {
-                puzzle[selected] = n
-                playSound(SoundManager.MOVE)
-                checkWin()
+        // 数字面板点击（底部 1~9，触区与按钮显示一致）
+        for ((i, rect) in numBtns.withIndex()) {
+            if (rect.contains(event.x, event.y)) {
+                if (selected >= 0 && !fixed[selected]) {
+                    puzzle[selected] = i + 1
+                    playSound(SoundManager.MOVE)
+                    checkWin()
+                }
                 invalidate()
+                return
             }
         }
     }
@@ -113,12 +125,14 @@ class SudokuView(context: Context) : GameView(context) {
             canvas.drawLine(boardLeft + i * cell, boardTop, boardLeft + i * cell, boardTop + cell * N, p)
             canvas.drawLine(boardLeft, boardTop + i * cell, boardLeft + cell * N, boardTop + i * cell, p)
         }
-        // 数字面板
-        numPaint.color = 0xFF8A93A6.toInt()
-        numPaint.textSize = cell * 0.45f
-        val panelY = boardTop + cell * N + cell * 0.8f
-        for (n in 1..9) {
-            canvas.drawText(n.toString(), (n - 0.5f) * width / 9f, panelY, numPaint)
+        // 数字面板：圆角按钮底 + 选中态高亮
+        numPaint.textSize = cell * 0.44f
+        for (n in 0 until N) {
+            val rect = numBtns[n]
+            val isSel = selected >= 0 && puzzle[selected] == n + 1
+            roundRect(canvas, rect, if (isSel) 0xFF4A6CF7.toInt() else 0xFF2A3557.toInt(), 12)
+            numPaint.color = if (isSel) 0xFFFFFFFF.toInt() else 0xFFAFC3FF.toInt()
+            canvas.drawText((n + 1).toString(), rect.centerX(), centerBaseline(rect.centerY(), numPaint), numPaint)
         }
     }
 

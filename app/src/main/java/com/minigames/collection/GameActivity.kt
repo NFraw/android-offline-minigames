@@ -23,6 +23,7 @@ import com.minigames.collection.common.HapticManager
 import com.minigames.collection.common.ScoreStore
 import com.minigames.collection.common.SettingsStore
 import com.minigames.collection.common.SoundManager
+import com.minigames.collection.common.Ui
 import com.minigames.collection.common.VoiceManager
 
 /**
@@ -52,25 +53,7 @@ class GameActivity : Activity() {
         voice = VoiceManager(this, settings)
         store = ScoreStore(this)
 
-        // ---- 创建游戏视图（反射） ----
-        val cls = Class.forName(spec.className).getConstructor(Context::class.java).newInstance(this)
-        game = cls as GameView
-        game.sound = sound
-        game.haptic = HapticManager(this, settings)
-        game.voice = voice
-        game.callbacks = object : GameView.Callbacks {
-            override fun onScoreChanged(score: Int) {
-                scoreView.text = "得分 " + score
-            }
-
-            override fun onGameOver(result: GameResult) {
-                showGameOver(result)
-            }
-        }
-
         val root = FrameLayout(this).apply { setBackgroundColor(0xFF141A2E.toInt()) }
-        root.addView(game, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
 
         // ---- 悬浮控制层 ----
         val overlay = FrameLayout(this)
@@ -93,24 +76,74 @@ class GameActivity : Activity() {
             FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT,
             Gravity.TOP or Gravity.RIGHT).apply { setMargins(0, dp(28), dp(12), 0) })
 
-        // 顶部中间：得分
+        // 右下角：得分胶囊（细窄，不遮挡游戏顶部状态与玩法区）
         scoreView = TextView(this).apply {
             text = "得分 0"
-            textSize = 14f
+            textSize = 24f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(0xFFFFFFFF.toInt())
             gravity = Gravity.CENTER
-            background = rounded(0x88000000.toInt(), dp(12).toFloat())
-            setPadding(dp(16), dp(7), dp(16), dp(7))
+            background = rounded(0xB31C2333.toInt(), dp(16).toFloat())
+            setPadding(dp(16), dp(6), dp(16), dp(6))
         }
         overlay.addView(scoreView, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT,
-            Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(34) })
+            Gravity.BOTTOM or Gravity.RIGHT).apply { rightMargin = dp(12); bottomMargin = dp(12) })
 
         root.addView(overlay, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
 
         setContentView(root)
+
+        // 全部游戏先展示规则介绍，点击「开始游戏」后再开局（带电脑模式的再选模式）
+        showRulesDialog(root)
+    }
+
+    /** 规则介绍：进入游戏前展示玩法说明，点击开始后创建游戏视图。 */
+    private fun showRulesDialog(root: FrameLayout) {
+        val d = AlertDialog.Builder(this)
+            .setTitle(spec.emoji + " " + spec.name)
+            .setMessage(spec.desc + "\n\n" + spec.hint)
+            .setCancelable(false)
+            .setPositiveButton("开始游戏") { _, _ ->
+                if (spec.aiClass != null) showModeDialog(root) else createGame(spec.className, root)
+            }
+            .setNegativeButton("返回菜单") { _, _ -> finish() }
+            .show()
+        Ui.styleDialog(d, resources.displayMetrics.density)
+    }
+
+    /** 反射创建指定模式的游戏视图并挂载到容器。 */
+    private fun createGame(className: String, root: FrameLayout) {
+        val cls = Class.forName(className).getConstructor(Context::class.java).newInstance(this)
+        game = cls as GameView
+        game.sound = sound
+        game.haptic = HapticManager(this, settings)
+        game.voice = voice
+        game.callbacks = object : GameView.Callbacks {
+            override fun onScoreChanged(score: Int) {
+                scoreView.text = "得分 " + score
+            }
+
+            override fun onGameOver(result: GameResult) {
+                showGameOver(result)
+            }
+        }
+        root.addView(game, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+    }
+
+    /** 双人游戏带电脑对战模式时，进入后弹出模式选择。 */
+    private fun showModeDialog(root: FrameLayout) {
+        AlertDialog.Builder(this)
+            .setTitle(spec.emoji + " " + spec.name)
+            .setMessage("请选择对战模式")
+            .setItems(arrayOf("双人对战", "电脑对战")) { _, which ->
+                createGame(if (which == 0) spec.className else spec.aiClass!!, root)
+            }
+            .setCancelable(false)
+            .setNegativeButton("返回菜单") { _, _ -> finish() }
+            .show()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -156,11 +189,12 @@ class GameActivity : Activity() {
     }
 
     private fun showHelp() {
-        AlertDialog.Builder(this)
+        val d = AlertDialog.Builder(this)
             .setTitle(spec.emoji + " " + spec.name)
             .setMessage(spec.desc + "\n\n" + spec.hint)
             .setPositiveButton("知道了", null)
             .show()
+        Ui.styleDialog(d, resources.displayMetrics.density)
     }
 
     private fun showSettingsDialog() {
@@ -177,11 +211,12 @@ class GameActivity : Activity() {
         container.addView(dialogSwitchRow("🗣 语音播报", settings.voiceEnabled) { on ->
             settings.voiceEnabled = on
         })
-        AlertDialog.Builder(this)
+        val d = AlertDialog.Builder(this)
             .setTitle("设置")
             .setView(container)
             .setPositiveButton("完成", null)
             .show()
+        Ui.styleDialog(d, resources.displayMetrics.density)
     }
 
     private fun dialogSwitchRow(title: String, initial: Boolean, onChange: (Boolean) -> Unit): LinearLayout {
@@ -192,7 +227,7 @@ class GameActivity : Activity() {
         }
         row.addView(TextView(this).apply {
             text = title
-            textSize = 15f
+            textSize = 27f
             setTextColor(0xFF1C2333.toInt())
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         val sw = Switch(this).apply { isChecked = initial }
@@ -214,13 +249,14 @@ class GameActivity : Activity() {
         }
         val text = msg.toString()
 
-        AlertDialog.Builder(this)
+        val d = AlertDialog.Builder(this)
             .setTitle(if (r.won) "🎉 胜利" else "游戏结束")
             .setMessage(text)
             .setCancelable(false)
             .setPositiveButton("再来一局") { _, _ -> game.reset() }
             .setNegativeButton("返回菜单") { _, _ -> finish() }
             .show()
+        Ui.styleDialog(d, resources.displayMetrics.density)
     }
 
     private fun overlayBtn(label: String, size: Float, onClick: () -> Unit): TextView =
@@ -229,7 +265,9 @@ class GameActivity : Activity() {
             textSize = size
             gravity = Gravity.CENTER
             setTextColor(0xFFFFFFFF.toInt())
-            background = rounded(0x99000000.toInt(), dp(12).toFloat())
+            // 深色圆角胶囊 + 细描边，浅色游戏画面上也清晰可辨
+            background = Ui.rounded(0xC91C2333.toInt(), 14f, resources.displayMetrics.density,
+                stroke = 1, strokeColor = 0x33FFFFFF.toInt())
             setOnClickListener { onClick() }
         }
 

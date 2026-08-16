@@ -12,3 +12,7 @@ captures/
 # 签名密钥与发布产物（不提交，APK 走 GitHub Releases）
 release.keystore
 *.apk
+
+# 本地构建缓存与截图
+.gradle-home/
+截图/

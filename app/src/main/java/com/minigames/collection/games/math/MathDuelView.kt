@@ -29,17 +29,17 @@ class MathDuelView(context: Context) : GameView(context) {
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val questionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 72f
+        textSize = 101f
         color = 0xFFE8EAF0.toInt()
     }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 22f
+        textSize = 37f
         color = 0xFF8A93A6.toInt()
     }
     private val scorePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = 28f
+        textSize = 48f
         color = 0xFFE8EAF0.toInt()
     }
     private val p1Paint = Paint().apply { color = 0x334A6CF7.toInt() }
@@ -108,7 +108,7 @@ class MathDuelView(context: Context) : GameView(context) {
         canvas.drawRect(android.graphics.RectF(0f, height / 2f, width.toFloat(), height.toFloat()), p2Paint)
         canvas.drawLine(0f, height / 2f, width.toFloat(), height / 2f, Paint().apply { color = 0x44FFFFFF.toInt(); strokeWidth = 2f })
         questionPaint.color = if (flash == 0) 0xFF3ED98A.toInt() else if (flash == 1) 0xFF3ED98A.toInt() else 0xFFE8EAF0.toInt()
-        questionPaint.textSize = 72f
+        questionPaint.textSize = 101f
         canvas.drawText(a.toString() + " " + op + " " + b + " = ?", width / 2f, height / 2f + dp(10).toFloat(), questionPaint)
         scorePaint.color = 0xFF6C8BFF.toInt()
         canvas.drawText("玩家 1：" + s1, width / 2f, dp(56).toFloat(), scorePaint)
