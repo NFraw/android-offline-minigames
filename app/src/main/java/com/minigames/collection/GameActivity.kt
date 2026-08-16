@@ -133,18 +133,41 @@ class GameActivity : Activity() {
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
     }
 
-    /** 双人游戏带电脑对战模式时，进入后弹出模式选择。 */
+    /** 双人游戏带电脑对战模式时，进入后弹出模式选择（自定义按钮，兼容所有系统版本）。 */
     private fun showModeDialog(root: FrameLayout) {
-        AlertDialog.Builder(this)
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(4))
+        }
+        container.addView(dialogActionButton("👥 双人对战") {
+            createGame(spec.className, root)
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)).apply {
+            bottomMargin = dp(12)
+        })
+        container.addView(dialogActionButton("🤖 电脑对战") {
+            createGame(spec.aiClass!!, root)
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)))
+        val d = AlertDialog.Builder(this)
             .setTitle(spec.emoji + " " + spec.name)
             .setMessage("请选择对战模式")
-            .setItems(arrayOf("双人对战", "电脑对战")) { _, which ->
-                createGame(if (which == 0) spec.className else spec.aiClass!!, root)
-            }
+            .setView(container)
             .setCancelable(false)
             .setNegativeButton("返回菜单") { _, _ -> finish() }
             .show()
+        Ui.styleDialog(d, resources.displayMetrics.density)
     }
+
+    /** 模式选择对话框中的大按钮。 */
+    private fun dialogActionButton(label: String, onClick: () -> Unit): TextView =
+        TextView(this).apply {
+            text = label
+            textSize = 27f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setTextColor(0xFFFFFFFF.toInt())
+            background = Ui.rounded(0xFF4A6CF7.toInt(), 14f, resources.displayMetrics.density)
+            setOnClickListener { onClick() }
+        }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)

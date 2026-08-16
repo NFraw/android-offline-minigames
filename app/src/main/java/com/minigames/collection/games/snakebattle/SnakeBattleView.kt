@@ -25,6 +25,9 @@ class SnakeBattleView(context: Context) : GameView(context) {
     private val body2 = ArrayDeque<Pt>()
     private var dir1x = 1; private var dir1y = 0
     private var dir2x = -1; private var dir2y = 0
+    // 待执行方向（缓冲一拍）：防止两个方向键快速连按时直接 180° 掉头撞自己
+    private var nd1x = 1; private var nd1y = 0
+    private var nd2x = -1; private var nd2y = 0
     private val foods = ArrayDeque<Pt>()
     private var alive1 = true
     private var alive2 = true
@@ -60,6 +63,12 @@ class SnakeBattleView(context: Context) : GameView(context) {
     private val body2Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF5A54A.toInt() }
     private val head2Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF8C98A.toInt() }
     private val foodPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFF5252.toInt() }
+    private val wallFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3A4668.toInt() }
+    private val wallPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFE8EAF0.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+    }
     private val zonePaint = Paint().apply { color = 0x0AFFFFFF.toInt() }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
@@ -164,14 +173,15 @@ class SnakeBattleView(context: Context) : GameView(context) {
 
     private fun setDir(zone: Int, dx: Int, dy: Int) {
         if (zone == 0) {
-            if (dx == -dir1x && dy == -dir1y) return
-            dir1x = dx
-            dir1y = dy
+            // 与当前方向或待执行方向相反都不接受
+            if ((dx == -dir1x && dy == -dir1y) || (dx == -nd1x && dy == -nd1y)) return
+            nd1x = dx
+            nd1y = dy
             started1 = true
         } else {
-            if (dx == -dir2x && dy == -dir2y) return
-            dir2x = dx
-            dir2y = dy
+            if ((dx == -dir2x && dy == -dir2y) || (dx == -nd2x && dy == -nd2y)) return
+            nd2x = dx
+            nd2y = dy
             started2 = true
         }
     }
@@ -194,6 +204,9 @@ class SnakeBattleView(context: Context) : GameView(context) {
     }
 
     private fun step() {
+        // 提交本拍方向
+        dir1x = nd1x; dir1y = nd1y
+        dir2x = nd2x; dir2y = nd2y
         var h1: Pt? = null
         var h2: Pt? = null
         if (alive1 && started1) {
@@ -278,6 +291,14 @@ class SnakeBattleView(context: Context) : GameView(context) {
             color = 0x33FFFFFF.toInt()
             strokeWidth = 2f
         })
+        // 边界墙：外圈填充 + 亮色描边，撞墙即死，须清晰可见
+        val wallMargin = dp(5)
+        canvas.drawRoundRect(
+            RectF(boardLeft - wallMargin, boardTop - wallMargin, boardLeft + cols * cell + wallMargin, boardTop + rows * cell + wallMargin),
+            dp(10).toFloat(), dp(10).toFloat(), wallFillPaint)
+        canvas.drawRoundRect(
+            RectF(boardLeft - wallMargin, boardTop - wallMargin, boardLeft + cols * cell + wallMargin, boardTop + rows * cell + wallMargin),
+            dp(10).toFloat(), dp(10).toFloat(), wallPaint)
         for (x in 0..cols) {
             canvas.drawLine(boardLeft + x * cell, boardTop, boardLeft + x * cell, boardTop + rows * cell, gridPaint)
         }
@@ -326,6 +347,8 @@ class SnakeBattleView(context: Context) : GameView(context) {
         body2.addLast(Pt(cols * 3 / 4 + 2, cy))
         dir1x = 1; dir1y = 0
         dir2x = -1; dir2y = 0
+        nd1x = 1; nd1y = 0
+        nd2x = -1; nd2y = 0
         alive1 = true
         alive2 = true
         over = false

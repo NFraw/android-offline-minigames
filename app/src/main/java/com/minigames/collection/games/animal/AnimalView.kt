@@ -43,6 +43,12 @@ class AnimalView(context: Context) : GameView(context) {
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val cellPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFD9B38C.toInt() }
     private val waterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF37C2F0.toInt() }
+    private val trapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFB25B33.toInt() }
+    private val trapStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF7A3B1D.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+    }
     private val piecePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val selPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFFF5D547.toInt()
@@ -64,6 +70,13 @@ class AnimalView(context: Context) : GameView(context) {
 
     private fun isWater(x: Int, y: Int): Boolean =
         (x == 3 || x == 4 || x == 5) && (y == 1 || y == 2 || y == 4 || y == 5)
+
+    /** 陷阱归属方：围绕兽穴的三个格。黑方兽穴在上 (4,0)，红方兽穴在下 (4,6)。 */
+    private fun trapOwner(x: Int, y: Int): Int {
+        if ((x == 3 && y == 0) || (x == 5 && y == 0) || (x == 4 && y == 1)) return 1
+        if ((x == 3 && y == 6) || (x == 5 && y == 6) || (x == 4 && y == 5)) return 0
+        return -1
+    }
 
     private fun inBounds(x: Int, y: Int) = x in 0 until N && y in 0 until M
 
@@ -155,6 +168,9 @@ class AnimalView(context: Context) : GameView(context) {
 
     private fun canCapture(sx: Int, sy: Int, p: Int, tx: Int, ty: Int, target: Int): Boolean {
         if (target == 0) return true
+        // 陷阱：目标在攻击方陷阱内被削弱（任意可吃）；目标在己方陷阱内受保护（不可吃）
+        val tp = trapOwner(tx, ty)
+        if (tp >= 0) return tp == side(p)
         val pWater = isWater(sx, sy)
         val tWater = isWater(tx, ty)
         // 水中鼠的庇护：岸上棋子不能吃水中的鼠
@@ -188,6 +204,9 @@ class AnimalView(context: Context) : GameView(context) {
             cellRect.set(x, y, x + cell, y + cell)
             if (isWater(c, r)) {
                 canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), waterPaint)
+            } else if (trapOwner(c, r) >= 0) {
+                canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), trapPaint)
+                canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), trapStroke)
             } else {
                 canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), cellPaint)
             }
@@ -199,6 +218,10 @@ class AnimalView(context: Context) : GameView(context) {
                 textPaint.color = 0xFFFFFFFF.toInt()
                 textPaint.textSize = cell * 0.5f
                 drawPieceText(canvas, textPaint, NAMES[a], x + cell / 2f, y + cell / 2f, p < 0)
+            } else if (trapOwner(c, r) >= 0) {
+                textPaint.color = 0x66FFFFFF.toInt()
+                textPaint.textSize = cell * 0.38f
+                canvas.drawText("陷", x + cell / 2f, y + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
             }
             if (r * N + c == selected) {
                 canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), selPaint)
@@ -209,7 +232,7 @@ class AnimalView(context: Context) : GameView(context) {
         canvas.drawText("穴", boardLeft + 4 * cell + cell / 2f, boardTop + 6 * cell + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
         textPaint.color = 0xFF8A93A6.toInt()
         textPaint.textSize = 36f
-        canvas.drawText((if (turn == 0) "红方" else "黑方") + "回合 · 象狮虎豹狼狗猫鼠互吃，鼠吃象 · 狮虎可跳河", width / 2f, boardTop + cell * M + dp(28).toFloat(), textPaint)
+        canvas.drawText((if (turn == 0) "红方" else "黑方") + "回合 · 鼠吃象 · 狮虎跳河 · 进对方陷阱被任意棋子吃", width / 2f, boardTop + cell * M + dp(28).toFloat(), textPaint)
     }
 
     override fun reset() {

@@ -125,7 +125,8 @@ class SnakeGameView(context: Context) : GameView(context) {
     }
 
     private fun setDir(dx: Int, dy: Int) {
-        if (dx == -dirX && dy == -dirY) return
+        // 与当前方向或待执行方向相反都不接受，防止快速连按时丢指令/误判 180° 掉头
+        if ((dx == -dirX && dy == -dirY) || (dx == -nextDirX && dy == -nextDirY)) return
         nextDirX = dx
         nextDirY = dy
         started = true

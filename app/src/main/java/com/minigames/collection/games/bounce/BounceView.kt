@@ -32,6 +32,7 @@ class BounceView(context: Context) : GameView(context) {
     private var score = 0
     private var over = false
     private var speed = 0f
+    private var launched = false
 
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val blockPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF4A6CF7.toInt() }
@@ -55,13 +56,31 @@ class BounceView(context: Context) : GameView(context) {
 
     override fun onTouch(event: MotionEvent) {
         if (over || paused) return
-        if (event.action == MotionEvent.ACTION_MOVE || event.action == MotionEvent.ACTION_DOWN) {
-            paddleX = event.x.coerceIn(paddleW / 2f, width - paddleW / 2f)
+        paddleX = event.x.coerceIn(paddleW / 2f, width - paddleW / 2f)
+        if (!launched && event.actionMasked == MotionEvent.ACTION_DOWN) {
+            launch()
         }
+    }
+
+    private fun launch() {
+        launched = true
+        val off = (ballX - paddleX) / (paddleW / 2f)
+        vx = off * speed * 0.5f
+        if (abs(vx) < speed * 0.15f) vx = if (off >= 0) speed * 0.15f else -speed * 0.15f
+        vy = -speed * 0.8f
+        playSound(SoundManager.MOVE)
     }
 
     override fun update(dt: Float) {
         if (over) return
+        if (!launched) {
+            // 未发射：球粘在挡板上跟随移动
+            ballX = paddleX
+            ballY = height - paddleH - ballR - dp(6).toFloat()
+            invalidate()
+            return
+        }
+        val prevY = ballY
         ballX += vx * dt
         ballY += vy * dt
         if (ballX - ballR < 0) {
@@ -76,13 +95,15 @@ class BounceView(context: Context) : GameView(context) {
             ballY = ballR
             vy = abs(vy)
         }
-        // 挡板
-        if (vy > 0 && ballY + ballR >= height - paddleH && ballY - ballR <= height - paddleH + dp(10).toFloat() &&
+        // 挡板：用上一帧位置判断球是否穿越挡板顶平面，避免高速穿档
+        if (vy > 0 && prevY + ballR >= height - paddleH && ballY + ballR <= height - paddleH &&
             abs(ballX - paddleX) < paddleW / 2f + ballR
         ) {
             ballY = height - paddleH - ballR
             vy = -abs(vy)
-            vx = (ballX - paddleX) / (paddleW / 2f) * speed * 0.7f
+            val off = (ballX - paddleX) / (paddleW / 2f)
+            vx = off * speed * 0.7f
+            if (abs(vx) < speed * 0.15f) vx = if (off >= 0) speed * 0.15f else -speed * 0.15f
             playSound(SoundManager.MOVE)
         }
         // 砖块碰撞
@@ -124,17 +145,18 @@ class BounceView(context: Context) : GameView(context) {
         }
         canvas.drawCircle(ballX, ballY, ballR, ballPaint)
         canvas.drawRoundRect(RectF(paddleX - paddleW / 2f, height - paddleH, paddleX + paddleW / 2f, height.toFloat()), dp(10).toFloat(), dp(10).toFloat(), paddlePaint)
-        canvas.drawText("滑动挡板接球 · 得分 " + score, width / 2f, height - dp(52).toFloat(), textPaint)
+        canvas.drawText(
+            if (launched) "滑动挡板接球 · 得分 " + score else "滑动挡板移动 · 点击发射",
+            width / 2f, height - dp(60).toFloat(), textPaint)
     }
 
     override fun reset() {
         for (i in blocks.indices) blocks[i] = true
-        ballX = width / 2f
-        ballY = height * 0.7f
         speed = height * 0.85f
-        vx = speed * 0.4f
-        vy = -speed * 0.8f
         paddleX = width / 2f
+        ballX = paddleX
+        ballY = height - paddleH - ballR - dp(6).toFloat()
+        launched = false
         score = 0
         over = false
         setScore(0)

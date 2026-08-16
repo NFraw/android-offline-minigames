@@ -5,11 +5,14 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.view.MotionEvent
+import android.widget.Toast
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
+import kotlin.math.max
+import kotlin.math.min
 
-/** 三国华容道：滑动方块，让曹操从底部出口逃出。 */
+/** 三国华容道：滑动方块，让曹操（红色大方块）从底部出口逃出。共 8 个经典布局关卡。 */
 class HuarongView(context: Context) : GameView(context) {
 
     companion object {
@@ -17,10 +20,47 @@ class HuarongView(context: Context) : GameView(context) {
         private const val ROWS = 5
     }
 
-    // 方块：(r, c, w, h, 名字)
     private data class Block(var r: Int, var c: Int, val w: Int, val h: Int, val name: String)
 
+    private data class Level(val name: String, val blocks: List<Block>)
+
+    private val LEVELS = listOf(
+        Level("横刀立马", listOf(
+            Block(0, 0, 1, 2, "张飞"), Block(0, 1, 2, 2, "曹操"), Block(3, 0, 1, 2, "马超"),
+            Block(0, 2, 1, 2, "赵云"), Block(1, 2, 2, 1, "关羽"), Block(3, 2, 1, 2, "黄忠"),
+            Block(1, 3, 1, 1, "卒"), Block(2, 3, 1, 1, "卒"), Block(0, 4, 1, 1, "卒"), Block(3, 4, 1, 1, "卒"))),
+        Level("兵分三路", listOf(
+            Block(0, 0, 1, 2, "张飞"), Block(0, 1, 2, 2, "曹操"), Block(3, 0, 1, 2, "马超"),
+            Block(0, 2, 1, 2, "赵云"), Block(3, 2, 1, 2, "黄忠"), Block(1, 3, 2, 1, "关羽"),
+            Block(1, 2, 1, 1, "卒"), Block(2, 2, 1, 1, "卒"), Block(0, 4, 1, 1, "卒"), Block(3, 4, 1, 1, "卒"))),
+        Level("近在咫尺", listOf(
+            Block(0, 0, 1, 2, "赵云"), Block(0, 1, 2, 2, "曹操"), Block(3, 0, 1, 2, "马超"),
+            Block(0, 2, 1, 2, "张飞"), Block(1, 2, 2, 1, "关羽"), Block(3, 2, 1, 2, "黄忠"),
+            Block(1, 3, 1, 1, "卒"), Block(2, 3, 1, 1, "卒"), Block(1, 4, 1, 1, "卒"), Block(2, 4, 1, 1, "卒"))),
+        Level("四路进兵", listOf(
+            Block(0, 0, 1, 2, "张飞"), Block(0, 1, 2, 2, "曹操"), Block(3, 0, 1, 2, "黄忠"),
+            Block(0, 2, 1, 2, "赵云"), Block(3, 2, 1, 2, "马超"), Block(1, 3, 2, 1, "关羽"),
+            Block(1, 2, 1, 1, "卒"), Block(2, 2, 1, 1, "卒"), Block(1, 4, 1, 1, "卒"), Block(2, 4, 1, 1, "卒"))),
+        Level("层层设防", listOf(
+            Block(0, 0, 1, 2, "马超"), Block(0, 1, 2, 2, "曹操"), Block(3, 0, 1, 2, "张飞"),
+            Block(0, 2, 1, 2, "黄忠"), Block(1, 2, 2, 1, "关羽"), Block(3, 2, 1, 2, "赵云"),
+            Block(1, 3, 1, 1, "卒"), Block(2, 3, 1, 1, "卒"), Block(1, 4, 1, 1, "卒"), Block(2, 4, 1, 1, "卒"))),
+        Level("巧过五关", listOf(
+            Block(0, 0, 1, 2, "赵云"), Block(0, 1, 2, 2, "曹操"), Block(3, 0, 1, 2, "黄忠"),
+            Block(0, 2, 1, 2, "马超"), Block(3, 2, 1, 2, "张飞"), Block(1, 3, 2, 1, "关羽"),
+            Block(1, 2, 1, 1, "卒"), Block(2, 2, 1, 1, "卒"), Block(0, 4, 1, 1, "卒"), Block(3, 4, 1, 1, "卒"))),
+        Level("峰回路转", listOf(
+            Block(0, 0, 1, 2, "马超"), Block(0, 1, 2, 2, "曹操"), Block(3, 0, 1, 2, "赵云"),
+            Block(0, 2, 1, 2, "张飞"), Block(1, 2, 2, 1, "关羽"), Block(3, 2, 1, 2, "黄忠"),
+            Block(1, 3, 1, 1, "卒"), Block(2, 3, 1, 1, "卒"), Block(0, 4, 1, 1, "卒"), Block(3, 4, 1, 1, "卒"))),
+        Level("走投无路", listOf(
+            Block(0, 0, 1, 2, "黄忠"), Block(0, 1, 2, 2, "曹操"), Block(3, 0, 1, 2, "马超"),
+            Block(0, 2, 1, 2, "赵云"), Block(3, 2, 1, 2, "张飞"), Block(1, 3, 2, 1, "关羽"),
+            Block(1, 2, 1, 1, "卒"), Block(2, 2, 1, 1, "卒"), Block(1, 4, 1, 1, "卒"), Block(2, 4, 1, 1, "卒")))
+    )
+
     private val blocks = ArrayList<Block>()
+    private var levelIndex = 0
     private var cell = 0f
     private var boardLeft = 0f
     private var boardTop = 0f
@@ -29,6 +69,8 @@ class HuarongView(context: Context) : GameView(context) {
     private var dragIdx = -1
     private var dragOffX = 0f
     private var dragOffY = 0f
+    private var dragStartR = 0
+    private var dragStartC = 0
 
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val floorPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1E2740.toInt() }
@@ -46,7 +88,7 @@ class HuarongView(context: Context) : GameView(context) {
     }
 
     override fun onLayout(w: Int, h: Int) {
-        cell = kotlin.math.min(w, h) / COLS.toFloat()
+        cell = min(w, h) / COLS.toFloat()
         boardLeft = (w - cell * COLS) / 2f
         boardTop = (h - cell * ROWS) / 2f
         reset()
@@ -64,6 +106,8 @@ class HuarongView(context: Context) : GameView(context) {
                         dragIdx = i
                         dragOffX = event.x - (boardLeft + b.c * cell)
                         dragOffY = event.y - (boardTop + b.r * cell)
+                        dragStartR = b.r
+                        dragStartC = b.c
                         break
                     }
                 }
@@ -79,7 +123,15 @@ class HuarongView(context: Context) : GameView(context) {
                     }
                 }
             }
-            MotionEvent.ACTION_UP -> {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (dragIdx >= 0) {
+                    val b = blocks[dragIdx]
+                    if (b.r != dragStartR || b.c != dragStartC) {
+                        moves++
+                        playSound(SoundManager.MOVE)
+                        checkWin()
+                    }
+                }
                 dragIdx = -1
             }
         }
@@ -92,6 +144,23 @@ class HuarongView(context: Context) : GameView(context) {
             if (tc < other.c + other.w && tc + b.w > other.c && tr < other.r + other.h && tr + b.h > other.r) return false
         }
         return true
+    }
+
+    /** 曹操 2×2 抵达底部出口（r=3, c=1）即过关。 */
+    private fun checkWin() {
+        if (over) return
+        val cao = blocks.firstOrNull { it.name == "曹操" } ?: return
+        if (cao.r == ROWS - 2 && cao.c == 1) {
+            playSound(SoundManager.WIN)
+            if (levelIndex == LEVELS.lastIndex) {
+                over = true
+                gameOver(GameResult(max(0, 600 - moves), true, "全部通关！总步数 " + moves))
+            } else {
+                levelIndex++
+                reset()
+                Toast.makeText(context, "过关！第 " + (levelIndex + 1) + " 关：" + LEVELS[levelIndex].name, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     override fun update(dt: Float) {}
@@ -114,23 +183,20 @@ class HuarongView(context: Context) : GameView(context) {
         }
         // 出口
         canvas.drawRect(RectF(boardLeft + cell, boardTop + ROWS * cell - dp(4).toFloat(), boardLeft + 3 * cell, boardTop + ROWS * cell + dp(4).toFloat()), Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3ED98A.toInt() })
-        canvas.drawText("把曹操移到下方出口 · 步数 " + moves, width / 2f, boardTop + cell * ROWS + dp(34).toFloat(), hintPaint)
+        hintPaint.color = 0xFF8A93A6.toInt()
+        canvas.drawText(
+            "第 " + (levelIndex + 1) + "/" + LEVELS.size + " 关：" + LEVELS[levelIndex].name + " · 步数 " + moves + " · 把曹操移到下方出口",
+            width / 2f, boardTop + cell * ROWS + dp(34).toFloat(), hintPaint)
     }
 
     override fun reset() {
         blocks.clear()
-        blocks.add(Block(0, 1, 2, 2, "曹操"))
-        blocks.add(Block(0, 0, 1, 2, "关羽"))
-        blocks.add(Block(0, 3, 1, 2, "张飞"))
-        blocks.add(Block(2, 0, 2, 1, "赵云"))
-        blocks.add(Block(2, 2, 2, 1, "马超"))
-        blocks.add(Block(3, 0, 1, 1, "卒"))
-        blocks.add(Block(3, 1, 1, 1, "卒"))
-        blocks.add(Block(3, 2, 1, 1, "卒"))
-        blocks.add(Block(3, 3, 1, 1, "卒"))
-        blocks.add(Block(4, 1, 2, 1, "黄忠"))
+        for (b in LEVELS[levelIndex].blocks) {
+            blocks.add(Block(b.r, b.c, b.w, b.h, b.name))
+        }
         moves = 0
         over = false
+        dragIdx = -1
         start()
     }
 }

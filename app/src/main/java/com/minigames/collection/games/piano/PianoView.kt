@@ -51,8 +51,8 @@ class PianoView(context: Context) : GameView(context) {
         if (event.action != MotionEvent.ACTION_DOWN || over || paused) return
         started = true
         val c = (event.x / colW).toInt()
-        val r = (event.y / rowH).toInt()
-        val row = rows.getOrNull(r) ?: return
+        val i = rowAt(event.y) ?: return
+        val row = rows[i]
         if (row.hit) return // 已点过的行不再计分/判罚
         if (c == row.col) {
             row.hit = true
@@ -65,6 +65,15 @@ class PianoView(context: Context) : GameView(context) {
             playSound(SoundManager.LOSE)
             gameOver(GameResult(score, false, "踩到白块了！得分 " + score))
         }
+    }
+
+    /** 按屏幕坐标反查所在行索引（rows[0] 在底部，且整体随 offset 上移）。 */
+    private fun rowAt(y: Float): Int? {
+        for (i in rows.indices) {
+            val top = height - (i + 1) * rowH + offset
+            if (y >= top && y < top + rowH) return i
+        }
+        return null
     }
 
     override fun update(dt: Float) {

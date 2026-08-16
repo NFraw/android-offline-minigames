@@ -22,6 +22,11 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
 
     protected class HistoryEntry(val from: Int, val to: Int, val captured: Int)
 
+    companion object {
+        /** 每方每局最多悔棋次数。 */
+        const val UNDO_LIMIT = 3
+    }
+
     protected var board = XiangqiRules.initialBoard()
     protected var turn = XiangqiRules.RED
     protected var selected = -1
@@ -35,6 +40,8 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
     protected val history = ArrayList<HistoryEntry>()
     protected val capturedRed = ArrayList<Int>()
     protected val capturedBlack = ArrayList<Int>()
+    /** 每方每局可用悔棋次数（默认 3 次）。 */
+    protected val undoLeft = IntArray(2) { UNDO_LIMIT }
 
     // 走子动画
     private var animFrom = -1
@@ -132,11 +139,12 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
         stoneR = min(cellX, cellY) * 0.44f
         boardLeft = (w - cellX * (XiangqiRules.COLS - 1)) / 2f
         boardTop = (h - cellY * (XiangqiRules.ROWS - 1)) / 2f
-        // 黑方（上）与红方（下）各自的悔棋按钮，与棋盘左缘对齐
-        val bw = dp(82).toFloat()
-        val bh = dp(34).toFloat()
+        // 黑方（上）与红方（下）各自的悔棋按钮，与棋盘左缘对齐（加大便于点击）
+        val bw = dp(118).toFloat()
+        val bh = dp(48).toFloat()
         undoBtnBlack.set(boardLeft, topStripY - bh / 2f, boardLeft + bw, topStripY + bh / 2f)
         undoBtnRed.set(boardLeft, bottomStripY - bh / 2f, boardLeft + bw, bottomStripY + bh / 2f)
+        btnTextPaint.textSize = dp(16).toFloat()
         resignBtn.setEmpty()
         // 棋盘木纹渐变（暖色木质）
         boardBgPaint.shader = LinearGradient(
@@ -203,9 +211,9 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
         onMoveCompleted(move)
     }
 
-    /** 撤销一步（双人版悔棋）。 */
-    protected fun undo() {
-        if (history.isEmpty() || gameOverFlag || animating) return
+    /** 撤销一步（双人版悔棋）。返回是否真正撤销成功。 */
+    protected fun undo(): Boolean {
+        if (history.isEmpty() || gameOverFlag || animating) return false
         val e = history.removeLast()
         board[e.from] = board[e.to]
         board[e.to] = e.captured
@@ -227,6 +235,7 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
         playSound(SoundManager.CLICK)
         speakVoice(VoiceManager.HUIQI)
         invalidate()
+        return true
     }
 
     /** 撤销到指定一方回合（人机版：撤到玩家回合）。 */
@@ -427,8 +436,9 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
         canvas.drawRoundRect(undoBtn, dp(13).toFloat(), dp(13).toFloat(), btnBgPaint)
         btnBorderPaint.strokeWidth = dp(1).toFloat()
         canvas.drawRoundRect(undoBtn, dp(13).toFloat(), dp(13).toFloat(), btnBorderPaint)
+        val undoText = "↶ 悔棋 ×" + undoLeft[side]
         canvas.drawText(
-            "↶ 悔棋", undoBtn.centerX(),
+            undoText, undoBtn.centerX(),
             undoBtn.centerY() - (btnTextPaint.descent() + btnTextPaint.ascent()) / 2f, btnTextPaint)
 
         // 吃子列表（本侧吃掉的对方棋子，按吃子先后排列，居中于按钮与侧名之间）
@@ -500,6 +510,8 @@ abstract class XiangqiBaseView(context: Context) : GameView(context) {
         history.clear()
         capturedRed.clear()
         capturedBlack.clear()
+        undoLeft[XiangqiRules.RED] = UNDO_LIMIT
+        undoLeft[XiangqiRules.BLACK] = UNDO_LIMIT
         animFrom = -1
         animTo = -1
         animProgress = 0f
