@@ -1,0 +1,224 @@
+[
+  {
+    "id": "flight",
+    "title": "飞行棋",
+    "runtime": "Godot",
+    "scene": "res://games/flight/flight.tscn"
+  },
+  {
+    "id": "snake",
+    "title": "贪吃蛇",
+    "runtime": "Godot",
+    "scene": "res://games/arcade/snake.tscn"
+  },
+  {
+    "id": "game2048",
+    "title": "2048",
+    "runtime": "Godot",
+    "scene": "res://games/puzzle/game2048.tscn"
+  },
+  {
+    "id": "tetris",
+    "title": "俄罗斯方块",
+    "runtime": "Godot",
+    "scene": "res://games/arcade/tetris.tscn"
+  },
+  {
+    "id": "whack",
+    "title": "打地鼠",
+    "runtime": "Godot",
+    "scene": "res://games/arcade/whack.tscn"
+  },
+  {
+    "id": "memory",
+    "title": "记忆翻牌",
+    "runtime": "Godot",
+    "scene": "res://games/puzzle/memory.tscn"
+  },
+  {
+    "id": "mines",
+    "title": "扫雷",
+    "runtime": "Godot",
+    "scene": "res://games/puzzle/mines.tscn"
+  },
+  {
+    "id": "gomoku",
+    "title": "五子棋",
+    "runtime": "Godot",
+    "scene": "res://games/stone/gomoku.tscn"
+  },
+  {
+    "id": "snakebattle",
+    "title": "贪吃蛇对战",
+    "runtime": "Godot",
+    "scene": "res://games/arcade/snakebattle.tscn"
+  },
+  {
+    "id": "pong",
+    "title": "乒乓对决",
+    "runtime": "Godot",
+    "scene": "res://games/physics/pong.tscn"
+  },
+  {
+    "id": "tictactoe",
+    "title": "井字棋",
+    "runtime": "Godot",
+    "scene": "res://games/stone/tictactoe.tscn"
+  },
+  {
+    "id": "reversi",
+    "title": "黑白棋",
+    "runtime": "Godot",
+    "scene": "res://games/stone/reversi.tscn"
+  },
+  {
+    "id": "reaction",
+    "title": "反应力对决",
+    "runtime": "Godot",
+    "scene": "res://games/arcade/reaction.tscn"
+  },
+  {
+    "id": "weiqi",
+    "title": "围棋",
+    "runtime": "Godot",
+    "scene": "res://games/stone/weiqi.tscn"
+  },
+  {
+    "id": "xiangqi_duel",
+    "title": "象棋（双人）",
+    "runtime": "Godot",
+    "scene": "res://games/chinese/xiangqi_duel.tscn"
+  },
+  {
+    "id": "piano",
+    "title": "别踩白块",
+    "runtime": "Godot",
+    "scene": "res://games/arcade/piano.tscn"
+  },
+  {
+    "id": "sliding",
+    "title": "数字华容道",
+    "runtime": "Godot",
+    "scene": "res://games/puzzle/sliding.tscn"
+  },
+  {
+    "id": "fruit",
+    "title": "切水果",
+    "runtime": "Godot",
+    "scene": "res://games/physics/fruit.tscn"
+  },
+  {
+    "id": "bounce",
+    "title": "弹一弹",
+    "runtime": "Godot",
+    "scene": "res://games/physics/bounce.tscn"
+  },
+  {
+    "id": "breakout",
+    "title": "打砖块",
+    "runtime": "Godot",
+    "scene": "res://games/physics/breakout.tscn"
+  },
+  {
+    "id": "plane",
+    "title": "飞机大战",
+    "runtime": "Godot",
+    "scene": "res://games/plane/plane.tscn"
+  },
+  {
+    "id": "simon",
+    "title": "西蒙记忆",
+    "runtime": "Godot",
+    "scene": "res://games/puzzle/simon.tscn"
+  },
+  {
+    "id": "animal",
+    "title": "斗兽棋",
+    "runtime": "Godot",
+    "scene": "res://games/animal/animal.tscn"
+  },
+  {
+    "id": "darkchess",
+    "title": "暗棋",
+    "runtime": "Godot",
+    "scene": "res://games/chinese/darkchess.tscn"
+  },
+  {
+    "id": "memory_duel",
+    "title": "记忆对决",
+    "runtime": "Godot",
+    "scene": "res://games/puzzle/memory_duel.tscn"
+  },
+  {
+    "id": "curling",
+    "title": "冰壶对决",
+    "runtime": "Godot",
+    "scene": "res://games/physics/curling.tscn"
+  },
+  {
+    "id": "math_duel",
+    "title": "抢答算术",
+    "runtime": "Godot",
+    "scene": "res://games/arcade/math_duel.tscn"
+  },
+  {
+    "id": "reaction4",
+    "title": "反应力四人战",
+    "runtime": "Godot",
+    "scene": "res://games/arcade/reaction4.tscn"
+  },
+  {
+    "id": "pool",
+    "title": "台球",
+    "runtime": "Godot",
+    "scene": "res://games/physics/pool.tscn"
+  },
+  {
+    "id": "poetry_adventure",
+    "title": "诗词小旅人",
+    "runtime": "Godot",
+    "scene": "res://games/education/poetry_adventure.tscn"
+  },
+  {
+    "id": "poetry_duel",
+    "title": "诗词接句对决",
+    "runtime": "Godot",
+    "scene": "res://games/education/poetry_duel.tscn"
+  },
+  {
+    "id": "pinyin_adventure",
+    "title": "拼音森林",
+    "runtime": "Godot",
+    "scene": "res://games/education/pinyin_adventure.tscn"
+  },
+  {
+    "id": "pinyin_duel",
+    "title": "拼音拼拼对决",
+    "runtime": "Godot",
+    "scene": "res://games/education/pinyin_duel.tscn"
+  },
+  {
+    "id": "listening_adventure",
+    "title": "音符探险",
+    "runtime": "Godot",
+    "scene": "res://games/education/listening_adventure.tscn"
+  },
+  {
+    "id": "listening_duel",
+    "title": "听音小耳朵对决",
+    "runtime": "Godot",
+    "scene": "res://games/education/listening_duel.tscn"
+  },
+  {
+    "id": "english_adventure",
+    "title": "单词小岛",
+    "runtime": "Godot",
+    "scene": "res://games/education/english_adventure.tscn"
+  },
+  {
+    "id": "english_duel",
+    "title": "看图英语对决",
+    "runtime": "Godot",
+    "scene": "res://games/education/english_duel.tscn"
+  }
+]

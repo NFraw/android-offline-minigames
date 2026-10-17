@@ -1,0 +1,607 @@
+[
+  {
+    "Path": "tools/sfx/.gitignore",
+    "Bytes": 104,
+    "SHA256": "CB6549843A5400F3597CB73A71FBF01158525569450F6C3C2845CA0F8B074F27"
+  },
+  {
+    "Path": "tools/sfx/build_sfx.py",
+    "Bytes": 11225,
+    "SHA256": "C4BCADAFE8EEA17F9BC7790DD83B9E14E578BC4160BD300B701C7CD40E31D02E"
+  },
+  {
+    "Path": "tools/sfx/decode_batch.mjs",
+    "Bytes": 1707,
+    "SHA256": "CF24C4E380D4101C0ED0172DE7AB88278D11066C86C1644B19920A42109E69C6"
+  },
+  {
+    "Path": "tools/sfx/manifest.py",
+    "Bytes": 5083,
+    "SHA256": "561B37A87FFA1441F4F961BDAB06BEA73CFA460DBFE5D7AE522A3CE053EF4210"
+  },
+  {
+    "Path": "tools/sfx/README.md",
+    "Bytes": 6649,
+    "SHA256": "4FD78CC62FF2E4B09BB668778D59CB7FF69520B43F8F68492151C5A96DE1DC24"
+  },
+  {
+    "Path": "tools/sfx/cache/board_capture.f32",
+    "Bytes": 117368,
+    "SHA256": "E87D8C8083063DF2163D1D46AC4E6869FDB38C640E571BDF4AFE61062F86731D"
+  },
+  {
+    "Path": "tools/sfx/cache/board_capture.meta.json",
+    "Bytes": 49,
+    "SHA256": "68D465908BA2EC8372B69A75ED551A5CF877C62E5C24DFE5ECE9EDD12D73297B"
+  },
+  {
+    "Path": "tools/sfx/cache/board_place.f32",
+    "Bytes": 243120,
+    "SHA256": "FACF3EB3C029E5848DA862F2F6DEC28B738E28D3B9A023D5D8BA02B5A78F3207"
+  },
+  {
+    "Path": "tools/sfx/cache/board_place.meta.json",
+    "Bytes": 49,
+    "SHA256": "F84CFB410CAC14FEECD8B517DDA38FCA9E9519F3AD8BD7B639CE1603BC38C5F6"
+  },
+  {
+    "Path": "tools/sfx/cache/board_shuffle.f32",
+    "Bytes": 1080800,
+    "SHA256": "8CE4CC3EA9F6C33564D487319236AB9A5626C36B998238F35324B9C9DF29E74A"
+  },
+  {
+    "Path": "tools/sfx/cache/board_shuffle.meta.json",
+    "Bytes": 50,
+    "SHA256": "4DBE077201E563F10714F6BE95932E323BFF8EF07746AFA8ABC28EB797C4CD07"
+  },
+  {
+    "Path": "tools/sfx/cache/board_slide.f32",
+    "Bytes": 206064,
+    "SHA256": "25FBDA4C9DCEEB90B8947C0D5264BAA77740E84E5C1AE4E81E70128C7DEBC96C"
+  },
+  {
+    "Path": "tools/sfx/cache/board_slide.meta.json",
+    "Bytes": 49,
+    "SHA256": "3B5BF4312A27963B6AFC2D3D7616F32D6ABBDAB8D76DC21911B53B8CAB652FE1"
+  },
+  {
+    "Path": "tools/sfx/cache/casino__cardPlace1.ogg",
+    "Bytes": 9624,
+    "SHA256": "D8F26C33A665DCBDCC6F632F6050BC9DD548FEB0D4942D4547615926D3926810"
+  },
+  {
+    "Path": "tools/sfx/cache/casino__cardShuffle.ogg",
+    "Bytes": 30002,
+    "SHA256": "96C84883A30845EDE723A4CF2E8369E9837E7DD4E0D4EB0212B0A7ED21B0F544"
+  },
+  {
+    "Path": "tools/sfx/cache/casino__cardSlide2.ogg",
+    "Bytes": 9042,
+    "SHA256": "E674A1679EC87B507047FE012D068AD2C412125F56186F0E732684705C2A6888"
+  },
+  {
+    "Path": "tools/sfx/cache/coin.f32",
+    "Bytes": 324680,
+    "SHA256": "F0E961A0C768CB51AA47CD042B423BA254C446CAC63BE64036EBF250757D482D"
+  },
+  {
+    "Path": "tools/sfx/cache/coin.meta.json",
+    "Bytes": 49,
+    "SHA256": "934A7FA8E432A626D410E9DD80D9CF03F02CAB269B69FCCA05CD48A0EA3A086F"
+  },
+  {
+    "Path": "tools/sfx/cache/combo.f32",
+    "Bytes": 145892,
+    "SHA256": "D7903D65E79BF1FA038910730787F9F0CDC6B51279B7A3B5CCFE24BBE6C6A6F7"
+  },
+  {
+    "Path": "tools/sfx/cache/combo.meta.json",
+    "Bytes": 49,
+    "SHA256": "F7AF932A158096C2F7D68C8532546FC376A51D81A6D444DB7A2A7A6CC8210872"
+  },
+  {
+    "Path": "tools/sfx/cache/countdown.f32",
+    "Bytes": 179712,
+    "SHA256": "8949561F0CAC204839BCD1FF5F51EC5668504B317DA486E9881BADF1CE9E11A1"
+  },
+  {
+    "Path": "tools/sfx/cache/countdown.meta.json",
+    "Bytes": 49,
+    "SHA256": "DE19891CECAC3C003F5C0A102FA7B0AF1F9E9D1D5ADC3AF5EB8664E13213C0F1"
+  },
+  {
+    "Path": "tools/sfx/cache/digital__laser4.ogg",
+    "Bytes": 9208,
+    "SHA256": "13F34561740AADBD3438B971DFE248CF56EA09D333EB7A0278561E09E27C3557"
+  },
+  {
+    "Path": "tools/sfx/cache/digital__lowRandom.ogg",
+    "Bytes": 5416,
+    "SHA256": "CEEFEEEB6982838D78AC9059A845CA614B3BD94580A9A9127FD5834D6206F739"
+  },
+  {
+    "Path": "tools/sfx/cache/digital__lowThreeTone.ogg",
+    "Bytes": 7035,
+    "SHA256": "B4B3BC7420E71BFBEC49A6EA13B8C12D76A5751CBDF063D8A8AC017C0B1E1D87"
+  },
+  {
+    "Path": "tools/sfx/cache/digital__phaserUp4.ogg",
+    "Bytes": 6332,
+    "SHA256": "A64A69368AF9D85DFCE8DD38432FD6C9935A7766621782193102C9CB276571FC"
+  },
+  {
+    "Path": "tools/sfx/cache/digital__powerUp4.ogg",
+    "Bytes": 6288,
+    "SHA256": "DF6992456056AF760815460B66D2CA1C3A07C200CCA26325DB5820B90104D177"
+  },
+  {
+    "Path": "tools/sfx/cache/digital__threeTone1.ogg",
+    "Bytes": 7361,
+    "SHA256": "BDF21EB12E65507F091D074886FDAC820E1CCAE51D060CAA168E5567ACADB84B"
+  },
+  {
+    "Path": "tools/sfx/cache/digital__zap2.ogg",
+    "Bytes": 9819,
+    "SHA256": "169CF3876647BAE0A28A7EB3FC5B5BD573AB9EFAE7B56B64A8700FF9BAFB3494"
+  },
+  {
+    "Path": "tools/sfx/cache/explode.f32",
+    "Bytes": 96768,
+    "SHA256": "5BE3397C031325938B638E0F59559DE7BD04A9A2BE565678C13A9312E85BCDE7"
+  },
+  {
+    "Path": "tools/sfx/cache/explode.meta.json",
+    "Bytes": 49,
+    "SHA256": "E40219C0E12F528BF65A688EF514B89060BF096DCF4C040EA52348FFF7AA1167"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_glass.f32",
+    "Bytes": 73944,
+    "SHA256": "3E1C845C1EDB5E229925CF486536CD4894DA9167F2150708142D6D2323CD3519"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_glass.meta.json",
+    "Bytes": 48,
+    "SHA256": "BD677D4DEAF5467573EEF286B7B9CE62D463AEB3DB8CBDC16A90619F39099D2E"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_heavy.f32",
+    "Bytes": 142744,
+    "SHA256": "FE6D68C4850C382F810E97F9F5749DE21C2FA94EB761A48B0A9A9BFC5497B0FF"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_heavy.meta.json",
+    "Bytes": 49,
+    "SHA256": "F584F4117FF774DFCB8CA7416A595DABD697B586530D83AFA806A2BD3EFE981F"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_light.f32",
+    "Bytes": 41456,
+    "SHA256": "09693F210CCC04D103A3FCE5D97702ADB4D08BA08F416E71FAEED7CCF5F30694"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_light.meta.json",
+    "Bytes": 48,
+    "SHA256": "2837CD1EE007332118100DD22B85A450D382ABCAE460C7FF1249E54B67A49299"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_metal.f32",
+    "Bytes": 83184,
+    "SHA256": "E02C2F3C5A5197232DF1FDBF72BA3FE99224495EAAE3A14A15FBFF7DD5552F15"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_metal.meta.json",
+    "Bytes": 49,
+    "SHA256": "918F2D0ED8C95A013BECF62EDBCAEB825B2A9C33AFAA1FCB4732C3ECEBDF4B12"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_soft.f32",
+    "Bytes": 64664,
+    "SHA256": "4783D474239CD9BEADA1D372FB907D1F647654C0C479B10F42CA41F455D11A5A"
+  },
+  {
+    "Path": "tools/sfx/cache/hit_soft.meta.json",
+    "Bytes": 48,
+    "SHA256": "E94575A49C42EA305197041F085F37D8B6A92112090526F215848CB33DF49FCE"
+  },
+  {
+    "Path": "tools/sfx/cache/iface__back_002.ogg",
+    "Bytes": 7029,
+    "SHA256": "61581C58194E3F19F531072EDABBC344204C7E0A2887B8EDEDCE4357BCF09195"
+  },
+  {
+    "Path": "tools/sfx/cache/iface__confirmation_002.ogg",
+    "Bytes": 14169,
+    "SHA256": "33B17A9A9A2397C62B285C52C33A907FDFFB476909C99E42DDE603F6A7A8B12C"
+  },
+  {
+    "Path": "tools/sfx/cache/iface__error_004.ogg",
+    "Bytes": 6393,
+    "SHA256": "0B574CEA597D96507E782AE9764F88482CE49F46E931E57054BF7150047F2D69"
+  },
+  {
+    "Path": "tools/sfx/cache/iface__tick_001.ogg",
+    "Bytes": 4497,
+    "SHA256": "9D057B918024C787BBE6C00BEED13A7EF72A3FA0C259ADD3CEF36582792F4230"
+  },
+  {
+    "Path": "tools/sfx/cache/impact__impactGeneric_light_001.ogg",
+    "Bytes": 5636,
+    "SHA256": "C3CD1C073D186AE8FA35788BA94DE581F1826E7427A7BB26490B2695FAC18EFA"
+  },
+  {
+    "Path": "tools/sfx/cache/impact__impactGlass_light_001.ogg",
+    "Bytes": 6544,
+    "SHA256": "05E513FBD42829060EB37855F8C3866722EC5C39A8937C9BFDE518CC609EFFA2"
+  },
+  {
+    "Path": "tools/sfx/cache/impact__impactMetal_light_002.ogg",
+    "Bytes": 6804,
+    "SHA256": "25A96F90A9A1F88A531E824E126F0519504625E5635E65A72E4F31611428DB29"
+  },
+  {
+    "Path": "tools/sfx/cache/impact__impactPunch_medium_001.ogg",
+    "Bytes": 8701,
+    "SHA256": "E71D23ABCC3F10D9D6BC9615B2A431FFF70B12333A5FCDD9964457564ACE4349"
+  },
+  {
+    "Path": "tools/sfx/cache/impact__impactSoft_medium_001.ogg",
+    "Bytes": 5506,
+    "SHA256": "7642A4FD43E547AFE4F7ADFADB3DABB681C0FF512F52C1674BAE30A726841FAF"
+  },
+  {
+    "Path": "tools/sfx/cache/impact__impactWood_medium_001.ogg",
+    "Bytes": 6555,
+    "SHA256": "15271DBE8E2872DBB0FF1AEB7B12B2D2B92B7C1951C88532B9AB9158C36DFC73"
+  },
+  {
+    "Path": "tools/sfx/cache/jingle__jingles_NES12.ogg",
+    "Bytes": 21202,
+    "SHA256": "AC678F8435036F800F4B2244E6D6B929BFDD012640698AB9815B35B86BFBCD29"
+  },
+  {
+    "Path": "tools/sfx/cache/jingle__jingles_NES13.ogg",
+    "Bytes": 25177,
+    "SHA256": "DA3B3D2334DCD7713F06DD3C0AF28E224D1DF8EE8792D9907F5A77C1630807D7"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES00.f32",
+    "Bytes": 620168,
+    "SHA256": "E1EF1BA41F437E0B8C1988DE202D7F1DB816D07282A6364689142B9AB21695AF"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES00.meta.json",
+    "Bytes": 49,
+    "SHA256": "A2F109314292FE3361578E9F89859B873684417B09A1808A6674D75591BABC6D"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES05.f32",
+    "Bytes": 319480,
+    "SHA256": "A14EBD28E6813E50C3E5D7F9157EFC9EF18695FEA4BF5AAC46180DC7F9E13D7C"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES05.meta.json",
+    "Bytes": 49,
+    "SHA256": "D0117941405F4A1850A6C60FF6E3CDBFD85C5873F21ACEAAB8D80DE10E5857C6"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES09.f32",
+    "Bytes": 156608,
+    "SHA256": "C789499620FF8D4990CEB9CB4DAF2DAC9CE8105548F19370963E81A5013446EB"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES09.meta.json",
+    "Bytes": 49,
+    "SHA256": "3C3BBB4A1264022925C55E2D76DF239EA2E3C6BA208C4E5D0EC95A63842062E1"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES13.f32",
+    "Bytes": 369592,
+    "SHA256": "FB1D1DD4BAFA3BA7B8571D1A463495DF5FCFCECF2F4BA842F2DA00B43BC17686"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES13.meta.json",
+    "Bytes": 49,
+    "SHA256": "CECC3EA70A2616BB8CE6BDF1D2F994EE7D36A561437584248826F9CB2C5FEFA0"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES16.f32",
+    "Bytes": 181664,
+    "SHA256": "1C9CFCBF9F7F72FF26B12A44B5A18E7FDF786F3D1E032246F72AC8E7D46B4F6A"
+  },
+  {
+    "Path": "tools/sfx/cache/jingles_NES16.meta.json",
+    "Bytes": 49,
+    "SHA256": "C603F058019F11E5C16B7C1CBC57A1B638D82B54936FCB8C03084C43FA324FF3"
+  },
+  {
+    "Path": "tools/sfx/cache/laser.f32",
+    "Bytes": 199660,
+    "SHA256": "7718DED561B90675F71412698CE01BBA824353461EC3BB1DDDA85A102C9F63A8"
+  },
+  {
+    "Path": "tools/sfx/cache/laser.meta.json",
+    "Bytes": 49,
+    "SHA256": "E5B4CFC77F3F83064912CCE97478754310A03561009D71DF887DF18F85D74C50"
+  },
+  {
+    "Path": "tools/sfx/cache/levelup.f32",
+    "Bytes": 129024,
+    "SHA256": "5966592419E67AF969DE0FA024BC9401FB705E23DD76C329980A8CD716F47108"
+  },
+  {
+    "Path": "tools/sfx/cache/levelup.meta.json",
+    "Bytes": 49,
+    "SHA256": "1140E0BA14D3A60E41B331B213896195594314BA202BBAE45686961B38C6814A"
+  },
+  {
+    "Path": "tools/sfx/cache/lose_jingle.f32",
+    "Bytes": 369592,
+    "SHA256": "FB1D1DD4BAFA3BA7B8571D1A463495DF5FCFCECF2F4BA842F2DA00B43BC17686"
+  },
+  {
+    "Path": "tools/sfx/cache/lose_jingle.meta.json",
+    "Bytes": 49,
+    "SHA256": "CECC3EA70A2616BB8CE6BDF1D2F994EE7D36A561437584248826F9CB2C5FEFA0"
+  },
+  {
+    "Path": "tools/sfx/cache/powerup.f32",
+    "Bytes": 96768,
+    "SHA256": "E51F396BEA899E3F3308CB01D95FFAB23DD1B9DB5E69D2479376E5F5F0F9303C"
+  },
+  {
+    "Path": "tools/sfx/cache/powerup.meta.json",
+    "Bytes": 49,
+    "SHA256": "E40219C0E12F528BF65A688EF514B89060BF096DCF4C040EA52348FFF7AA1167"
+  },
+  {
+    "Path": "tools/sfx/cache/rpg__handleCoins.ogg",
+    "Bytes": 25394,
+    "SHA256": "8A91F969E932DF709DF80EE124D86A51389EED9B67F22E5E716BC2BBF60D8DAB"
+  },
+  {
+    "Path": "tools/sfx/cache/ui__click2.ogg",
+    "Bytes": 4656,
+    "SHA256": "C394B46BC6737F7F7EDFBFA3031CE621B7A43D498D456D6198364EEE9CD3E306"
+  },
+  {
+    "Path": "tools/sfx/cache/ui__rollover3.ogg",
+    "Bytes": 4778,
+    "SHA256": "641DF2C95468F1F035FF0AE964129DA10543B4EA8FF6C13F66BCBD899DCFC113"
+  },
+  {
+    "Path": "tools/sfx/cache/ui__switch7.ogg",
+    "Bytes": 5707,
+    "SHA256": "7A3032D1DAE63D1096CF2F1E59CB43E598D5229DCB9617E9D3FB13E96C78D5F2"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_back.f32",
+    "Bytes": 12320,
+    "SHA256": "DAEA735C6CB8C11D4EBD1B79C7CE5BDBF3575E6D1DFE2455EE5F38889517B28E"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_back.meta.json",
+    "Bytes": 48,
+    "SHA256": "2E87E47071C88F0944DEDDA954A6D9F69820DDB681FF5C2F1C76E3594DCFBCCE"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_click.f32",
+    "Bytes": 19664,
+    "SHA256": "BCED523B508311ECB6763BF7B1BC3DA19B97946CB147B7C21026A596713378A7"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_click.meta.json",
+    "Bytes": 48,
+    "SHA256": "13A88E50F17650495A87F6AFC8382C212A33F12E930B2F34ABF01A28796C4F4B"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_confirm.f32",
+    "Bytes": 95080,
+    "SHA256": "1DCDBD2A4D41D8E34B52AC491972012C36D45810744356F6B38FCB146A40DC98"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_confirm.meta.json",
+    "Bytes": 49,
+    "SHA256": "CABB2A702F203C0879225B5CB65C8A59FE23CDBD8B2D9986D1945DD93B877846"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_error.f32",
+    "Bytes": 36232,
+    "SHA256": "7B87DCE8BACF7EFB7010E52BD8328CA0D5E4916ABF865AF69C5C8C4D36A4B38B"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_error.meta.json",
+    "Bytes": 48,
+    "SHA256": "743FDA1F60CB09AC87DD622FE27252E7EE8946A2D23C1BC3539FA9CFF5653CEA"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_rollover.f32",
+    "Bytes": 24448,
+    "SHA256": "E462C5DD57AD6DFCEABF1C86BFE09F9393419B8AF4D32DD7E353F0E0A2F0369E"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_rollover.meta.json",
+    "Bytes": 48,
+    "SHA256": "763B5A085DBCEC0321D14AFA156CC3A8226C0F0DE670F80D5D556EB8751C4DB4"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_switch.f32",
+    "Bytes": 67848,
+    "SHA256": "0385FBC6F79520A6DC9691D6804E8265C071E1D0DBA691609DEBC0DDCF5B4F41"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_switch.meta.json",
+    "Bytes": 48,
+    "SHA256": "FFA04CCAFDCD2BB7E0200622FFE55239BC7542B17259240E60CECAEFA843CF2A"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_tick.f32",
+    "Bytes": 4096,
+    "SHA256": "20FCEDB116B4B22375519B4E991AEC29E3E1F1062497FB1E06C0303298C73F9A"
+  },
+  {
+    "Path": "tools/sfx/cache/ui_tick.meta.json",
+    "Bytes": 48,
+    "SHA256": "02C9DE6DDB4F02757E68E84FAE16555F3132ED2279437D9C81EA3DB7A017904E"
+  },
+  {
+    "Path": "tools/sfx/cache/win_jingle.f32",
+    "Bytes": 300688,
+    "SHA256": "2F8C8F5ADA6CB9160DC891EA284766ADEB731D0C93AF1833DC7E6A2B0E448258"
+  },
+  {
+    "Path": "tools/sfx/cache/win_jingle.meta.json",
+    "Bytes": 49,
+    "SHA256": "00DBCF50D5F8C20D364E494083FCC904DAE485944C5EBEF486F7D1282D4A2DA7"
+  },
+  {
+    "Path": "tools/sfx/cache/zap.f32",
+    "Bytes": 216576,
+    "SHA256": "BF734EDFD2F26D98DEA91503AB92B454048DF79F305604756CFD581D96766BF4"
+  },
+  {
+    "Path": "tools/sfx/cache/zap.meta.json",
+    "Bytes": 49,
+    "SHA256": "426C305024122D4A58EF362D3731413D325A1BEBE62B50533885907332FFA733"
+  },
+  {
+    "Path": "tools/sfx/vendor/ogg-vorbis-decoder.min.mjs",
+    "Bytes": 101764,
+    "SHA256": "158DD1BD7C676B3859B3134878B8DF5D37E9EBE77E3BCFD57186BDD5D5F6D904"
+  },
+  {
+    "Path": "tools/sfx/__pycache__/manifest.cpython-312.pyc",
+    "Bytes": 4198,
+    "SHA256": "133553E944601DE8E6EB3DA2CBC889738078D5D378D0DE198A6725CF71556E2A"
+  },
+  {
+    "Path": "wav/board_capture.wav",
+    "Bytes": 11498,
+    "SHA256": "B79A63EBE128A8D0EB53ED1461575C09182AB59C6518DA4C904A8DA626417741"
+  },
+  {
+    "Path": "wav/board_place.wav",
+    "Bytes": 13274,
+    "SHA256": "34EE4AF102D3E3D1CAF62CC32103E80A1B21F76544BAA6C532049183A30A021C"
+  },
+  {
+    "Path": "wav/board_shuffle.wav",
+    "Bytes": 30914,
+    "SHA256": "C74E791E566A8561848BD4C30A5934DD30FD74629A6ED81993E73683A086EAF5"
+  },
+  {
+    "Path": "wav/board_slide.wav",
+    "Bytes": 14156,
+    "SHA256": "D37148FE57F2022B0BB0CFFBBD809D6AD57B9B0BEEF80BBBFA39F82696E4A918"
+  },
+  {
+    "Path": "wav/coin.wav",
+    "Bytes": 22976,
+    "SHA256": "F5A5BD2CF46E99FF5E2875C9CF3A58CA16D0D4C0DA1A26EC0E27EC2FF1548996"
+  },
+  {
+    "Path": "wav/combo.wav",
+    "Bytes": 20330,
+    "SHA256": "4E2DA884A7CC57DF1F03DEBCC3778E7BEAFCAF8E5F5A6CFC0D5AE8341A2E3965"
+  },
+  {
+    "Path": "wav/countdown.wav",
+    "Bytes": 22976,
+    "SHA256": "409793CB4EB59599F0CB01F44FE3730732A0B12E74A715D7538893453831EC8B"
+  },
+  {
+    "Path": "wav/explode.wav",
+    "Bytes": 17432,
+    "SHA256": "E9090FFF85147F50472F12865E6B9FEC4AF5B96675146D82BCFF37ECCACF3173"
+  },
+  {
+    "Path": "wav/hit_glass.wav",
+    "Bytes": 6420,
+    "SHA256": "8825F95DA88EE59E0B732BCA475431681021BEED73A359AA28F099966EE4932C"
+  },
+  {
+    "Path": "wav/hit_heavy.wav",
+    "Bytes": 11958,
+    "SHA256": "0B5D6FD0AEBA519CB8061BF3454D92CBA0FA70B5AF1379D1F97A0340BF870621"
+  },
+  {
+    "Path": "wav/hit_light.wav",
+    "Bytes": 5226,
+    "SHA256": "15BDB4C95688AED9FD2E0499D219F352E1A8A9F1F64B2EE0450EA380FA8924AD"
+  },
+  {
+    "Path": "wav/hit_metal.wav",
+    "Bytes": 7604,
+    "SHA256": "9B0C5C16175329F0401A9C18F0EBC8A8BB37E72B7FEB185AA2B6C7D49354C5E8"
+  },
+  {
+    "Path": "wav/hit_soft.wav",
+    "Bytes": 8126,
+    "SHA256": "79831AE6A294340AFE772D2F0287F7B723C6B0CE624189CFBCF6DDD0E76E4BEE"
+  },
+  {
+    "Path": "wav/laser.wav",
+    "Bytes": 13274,
+    "SHA256": "7BFBB5CC34574777207CF4905FF75ADC775B4789A581F484ED590613147E8E4C"
+  },
+  {
+    "Path": "wav/levelup.wav",
+    "Bytes": 12240,
+    "SHA256": "75713279A12660E9758AC6BED3BD3C636821A723DC4550609F4372596370E39B"
+  },
+  {
+    "Path": "wav/lose_jingle.wav",
+    "Bytes": 46242,
+    "SHA256": "C7B137AE436F401EA315C01A7DD0023DA578DC8C62A880E33DC357E6828CBE10"
+  },
+  {
+    "Path": "wav/powerup.wav",
+    "Bytes": 15360,
+    "SHA256": "E77BAF584111D340EE634599CCBB13FAF6C2D3611FE88488B7FD1F99010FF07F"
+  },
+  {
+    "Path": "wav/ui_back.wav",
+    "Bytes": 3124,
+    "SHA256": "C96729F7EC3E3CCE8900446FE214928A5FC89982867351F8BBAF79361683E31C"
+  },
+  {
+    "Path": "wav/ui_click.wav",
+    "Bytes": 2502,
+    "SHA256": "1E58786B660B1214B0D7F47AAFAC135A22505A96F4CF84DB525347E3555424AF"
+  },
+  {
+    "Path": "wav/ui_confirm.wav",
+    "Bytes": 17684,
+    "SHA256": "F85A67C6A3A5E97BE39B09A86D12BB9438B6E3703FAAD022C85470180F8C1061"
+  },
+  {
+    "Path": "wav/ui_error.wav",
+    "Bytes": 4572,
+    "SHA256": "5F8E30EB1C6D8609F8EBD216372288F94664753079F0A3F7F9B2329F9E502E19"
+  },
+  {
+    "Path": "wav/ui_rollover.wav",
+    "Bytes": 3100,
+    "SHA256": "7A66607263FAA086CEABF31A52DE2E33CA8B7AA4B7B64B6F60F1D84220F481D8"
+  },
+  {
+    "Path": "wav/ui_switch.wav",
+    "Bytes": 7422,
+    "SHA256": "45274658CD28CE0E700369AA80BF313EFB97C2927B6CCED0FB638A3F78868A1D"
+  },
+  {
+    "Path": "wav/ui_tick.wav",
+    "Bytes": 680,
+    "SHA256": "5710AADC94F95132C0510FC303DDE6829277BE1EC5BB70F47F47134090E05243"
+  },
+  {
+    "Path": "wav/win_jingle.wav",
+    "Bytes": 37630,
+    "SHA256": "56284B5533D906E26CCFCE4A2CA6D6E352C87325B6CF367C3ED5147D2510C9C5"
+  },
+  {
+    "Path": "wav/zap.wav",
+    "Bytes": 14156,
+    "SHA256": "DA726964D897F854FABC508EACA3B60EA96DE6215D8E00B1486C3EA8575C8C47"
+  }
+]

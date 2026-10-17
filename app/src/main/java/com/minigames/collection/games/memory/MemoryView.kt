@@ -61,10 +61,16 @@ class MemoryView(context: Context) : GameView(context) {
     }
 
     override fun onTouch(event: MotionEvent) {
-        if (event.action != MotionEvent.ACTION_DOWN) return
-        if (lockTimer > 0f || finished) return
-        val c = ((event.x - boardLeft) / cell).toInt()
-        val r = ((event.y - boardTop) / cell).toInt()
+        // 暂停时必须拒绝操作：暂停只停帧循环，触摸仍会派发。
+        // 旧实现允许在暂停遮罩下翻牌偷看；而且配错时 lockTimer 被置为 0.7，
+        // 恢复后要等计时器走完才能继续点，玩家会以为"卡死了"。
+        if (event.action != MotionEvent.ACTION_DOWN || paused || finished) return
+        if (lockTimer > 0f) return
+        val fc = (event.x - boardLeft) / cell
+        val fr = (event.y - boardTop) / cell
+        if (fc < 0f || fr < 0f) return  // 负值 toInt() 向零截断会把棋盘外一格解析成第 0 行/列
+        val c = fc.toInt()
+        val r = fr.toInt()
         if (r !in 0 until SIZE || c !in 0 until SIZE) return
         val idx = r * SIZE + c
         if (matched[idx] || idx == flipA || idx == flipB) return

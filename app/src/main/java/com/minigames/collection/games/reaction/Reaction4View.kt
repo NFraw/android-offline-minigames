@@ -3,12 +3,16 @@ package com.minigames.collection.games.reaction
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.RectF
 import android.view.MotionEvent
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
 
-/** 四人反应力：四个分区同时变绿，抢点得分，先到 5 分获胜。 */
+/**
+ * 四人反应力：四个分区同时变绿，各分区独立计分（四指同点四区都生效），先到 5 分获胜。
+ * 变绿前点击该分区 = 抢拍，该分区本轮作废（不再得分），不影响其他分区。
+ */
 class Reaction4View(context: Context) : GameView(context) {
 
     companion object {
@@ -20,10 +24,12 @@ class Reaction4View(context: Context) : GameView(context) {
 
     private var state = WAIT
     private var waitTimer = 0f
+    private var readyTimer = 0f
     private var settleTimer = 0f
     private val scores = IntArray(4)
-    private val flashes = BooleanArray(4)
-    private var lastWinner = -1
+    private val scored = BooleanArray(4)  // 本回合该分区已得分
+    private val flashes = BooleanArray(4) // 本回合该分区抢拍被罚
+    private var over = false
 
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val waitPaint = Paint().apply { color = 0xFF2A3557.toInt() }
@@ -39,6 +45,12 @@ class Reaction4View(context: Context) : GameView(context) {
         textSize = 36f
         color = 0xFF8A93A6.toInt()
     }
+    /** 分区底色画笔（复用，避免每帧新建 Paint 造成 GC 抖动）。 */
+    private val zonePaint = Paint()
+    private val midPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x33FFFFFF.toInt()
+        strokeWidth = 2f
+    }
 
     override fun onLayout(w: Int, h: Int) {
         reset()
@@ -51,29 +63,44 @@ class Reaction4View(context: Context) : GameView(context) {
     }
 
     override fun onTouch(event: MotionEvent) {
-        if (paused) return
+        if (paused || over) return
         if (event.actionMasked != MotionEvent.ACTION_DOWN &&
             event.actionMasked != MotionEvent.ACTION_POINTER_DOWN
         ) return
         val idx = event.actionIndex
         val zone = zoneOf(event.getX(idx), event.getY(idx))
         if (state == READY) {
-            state = SETTLED
-            settleTimer = 1.0f
-            lastWinner = zone
+            // 每区每轮只能得一次分；抢拍被罚的分区本轮不得分
+            if (scored[zone] || flashes[zone]) {
+                invalidate()
+                return
+            }
+            scored[zone] = true
             scores[zone]++
             playSound(SoundManager.EAT)
             if (scores[zone] >= WIN_SCORE) {
+                over = true
                 playSound(SoundManager.WIN)
                 gameOver(GameResult(0, true, "玩家 " + (zone + 1) + " 率先拿到 " + WIN_SCORE + " 分获胜！"))
+                return
+            }
+            if (allZonesDone()) {
+                state = SETTLED
+                settleTimer = 0.9f
             }
         } else if (state == WAIT) {
-            state = SETTLED
-            settleTimer = 1.0f
-            flashes[zone] = true
-            playSound(SoundManager.LOSE)
+            // 抢拍：只罚该分区本轮，不影响其他分区继续
+            if (!flashes[zone]) {
+                flashes[zone] = true
+                playSound(SoundManager.LOSE)
+            }
         }
         invalidate()
+    }
+
+    private fun allZonesDone(): Boolean {
+        for (i in 0 until 4) if (!scored[i] && !flashes[i]) return false
+        return true
     }
 
     override fun update(dt: Float) {
@@ -81,7 +108,14 @@ class Reaction4View(context: Context) : GameView(context) {
             waitTimer -= dt
             if (waitTimer <= 0f) {
                 state = READY
+                readyTimer = 2.0f
                 playSound(SoundManager.MOVE)
+            }
+        } else if (state == READY) {
+            readyTimer -= dt
+            if (readyTimer <= 0f) {
+                state = SETTLED
+                settleTimer = 0.9f
             }
         } else if (state == SETTLED) {
             settleTimer -= dt
@@ -92,8 +126,10 @@ class Reaction4View(context: Context) : GameView(context) {
     private fun newRound() {
         state = WAIT
         waitTimer = 0.8f + Math.random().toFloat() * 1.8f
-        for (i in 0 until 4) flashes[i] = false
-        lastWinner = -1
+        for (i in 0 until 4) {
+            scored[i] = false
+            flashes[i] = false
+        }
     }
 
     override fun drawGame(canvas: Canvas) {
@@ -101,40 +137,55 @@ class Reaction4View(context: Context) : GameView(context) {
         for (z in 0 until 4) {
             val left = if (z % 2 == 0) 0f else width / 2f
             val top = if (z < 2) 0f else height / 2f
-            val rect = android.graphics.RectF(left, top, left + width / 2f, top + height / 2f)
-            val color = when {
+            val rect = RectF(left, top, left + width / 2f, top + height / 2f)
+            zonePaint.color = when {
                 flashes[z] -> flashPaint.color
                 state == READY -> readyPaint.color
                 else -> waitPaint.color
             }
-            val zonePaint = Paint()
-            zonePaint.color = color
             canvas.drawRect(rect, zonePaint)
             val label = when {
                 flashes[z] -> "抢拍！"
+                scored[z] -> "+1"
                 state == READY -> "点击！"
-                state == SETTLED && lastWinner == z -> "+1"
                 else -> "等待…"
             }
-            canvas.drawText(label, left + width / 4f, top + height / 4f + dp(10).toFloat(), textPaint)
+            val cx = left + width / 4f
+            val cy = top + height / 4f
+            // 上半屏两个分区（玩家 1、玩家 2）的文字必须旋转 180°，
+            // 否则坐在屏幕上方的两人看到的是倒字，无法确认自己的分区与比分。
+            val faceUp = z < 2
             scorePaint.color = 0xAAE8EAF0.toInt()
-            canvas.drawText("玩家 " + (z + 1) + "：" + scores[z], left + width / 4f, top + height / 4f + dp(44).toFloat(), scorePaint)
+            if (faceUp) {
+                canvas.save()
+                canvas.translate(cx, cy)
+                canvas.rotate(180f)
+                canvas.translate(-cx, -cy)
+                canvas.drawText(label, cx, cy + dp(10).toFloat(), textPaint)
+                canvas.drawText("玩家 " + (z + 1) + "：" + scores[z], cx, cy + dp(44).toFloat(), scorePaint)
+                canvas.restore()
+            } else {
+                canvas.drawText(label, cx, cy + dp(10).toFloat(), textPaint)
+                canvas.drawText("玩家 " + (z + 1) + "：" + scores[z], cx, cy + dp(44).toFloat(), scorePaint)
+            }
         }
-        canvas.drawLine(width / 2f, 0f, width / 2f, height.toFloat(), Paint().apply { color = 0x33FFFFFF.toInt(); strokeWidth = 2f })
-        canvas.drawLine(0f, height / 2f, width.toFloat(), height / 2f, Paint().apply { color = 0x33FFFFFF.toInt(); strokeWidth = 2f })
+        canvas.drawLine(width / 2f, 0f, width / 2f, height.toFloat(), midPaint)
+        canvas.drawLine(0f, height / 2f, width.toFloat(), height / 2f, midPaint)
         scorePaint.color = 0xFF8A93A6.toInt()
-        canvas.drawText("变绿后抢先点击自己分区 · 抢拍无分 · 先到 " + WIN_SCORE + " 分胜", width / 2f, height - dp(14).toFloat(), scorePaint)
+        canvas.drawText("四分区同时变绿 · 各点各的区可同时得分 · 抢拍该区本轮作废 · 先到 " + WIN_SCORE + " 分胜", width / 2f, height - dp(14).toFloat(), scorePaint)
     }
 
     override fun reset() {
         state = WAIT
         waitTimer = 1.2f
+        readyTimer = 0f
         settleTimer = 0f
+        over = false
         for (i in 0 until 4) {
             scores[i] = 0
+            scored[i] = false
             flashes[i] = false
         }
-        lastWinner = -1
         start()
     }
 }

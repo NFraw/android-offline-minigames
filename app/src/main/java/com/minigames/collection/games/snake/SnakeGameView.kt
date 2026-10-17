@@ -9,14 +9,37 @@ import android.view.MotionEvent
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
-import kotlin.math.max
 import kotlin.math.min
 
-/** 贪吃蛇：屏幕滑动或下方方向键控制，吃到食物变长加速，撞墙/咬到自己结束（边界墙清晰可见）。 */
+/**
+ * 贪吃蛇游戏实现。
+ *
+ * 游戏规则：滑动屏幕或点击下方方向键控制蛇的移动方向，吃到食物蛇身变长并逐渐加速，
+ * 撞墙或咬到自己游戏结束，蛇身越长分数越高。
+ *
+ * 实现架构（所有游戏都遵循同一模式）：
+ *   1. 数据模型：用 data class Pt(x,y) 表示坐标，ArrayDeque<Pt> 表示蛇身
+ *   2. 游戏逻辑：在 update(dt) 中按速度累积时间，到时执行 step() 移动一步
+ *   3. 绘制画面：在 drawGame(canvas) 中用 Canvas API 绘制背景、网格、蛇身、食物、方向键
+ *   4. 触摸处理：在 onTouch() 中识别方向键点击和滑动手势
+ *   5. 重置：在 reset() 中清空所有状态并调用 start() 启动帧循环
+ *
+ * 学习要点：
+ *   - GestureDetector 用于识别滑动手势（Fling）
+ *   - Canvas 绘制：drawRoundRect（圆角矩形）、drawCircle（圆）、drawText（文字）
+ *   - 帧累积模式：acc += dt * speed; while(acc >= 1) { step(); acc -= 1; }
+ *     实现"每 N 秒移动一步"的效果，速度通过调整 speed 值实现
+ *
+ * 被调用位置：
+ *   - GameActivity 通过反射创建：Class.forName("com.minigames.collection.games.snake.SnakeGameView")
+ *   - GameSpec 注册在 GameRegistry.games 列表中
+ */
 class SnakeGameView(context: Context) : GameView(context) {
 
+    /** 坐标点，data class 自动生成 equals/hashCode/toString/copy */
     private data class Pt(val x: Int, val y: Int)
 
+    /** 方向键按钮：rect=触摸区域, dx/dy=方向, label=显示文字 */
     private data class Btn(val rect: RectF, val dx: Int, val dy: Int, val label: String)
 
     private val body = ArrayDeque<Pt>()
@@ -84,18 +107,26 @@ class SnakeGameView(context: Context) : GameView(context) {
         color = 0xFFFFFFFF.toInt()
     }
 
+    /**
+     * 屏幕尺寸确定后计算棋盘和方向键布局。
+     * @param w View 宽度（像素）
+     * @param h View 高度（像素）
+     * 计算逻辑：固定 16×24 格子，格子大小取宽/高适配的较小值，保证棋盘不超出可用区域。
+     */
     override fun onLayout(w: Int, h: Int) {
         val padH = dp(150)
-        val availH = h - padH
-        val cellByW = w / 16f
-        val cellByH = availH / 24f
-        cell = max(10f, min(cellByW, cellByH))
-        cols = (w / cell).toInt().coerceAtMost(16)
-        rows = (availH / cell).toInt().coerceAtLeast(8)
+        val topPad = dp(110).toFloat() // 顶部安全区：悬浮按钮层占用，棋盘从该高度之下开始
+        // 可用高度保底：分屏/小窗等极端情况下 h 可能小于 padH + topPad，
+        // 不保底的话 cell 会变成负数，drawRoundRect 反向矩形什么都画不出来（棋盘整体消失）。
+        val availH = (h - padH - topPad).coerceAtLeast(dp(120).toFloat())
+        // 固定 16×24 棋盘，格子取宽度/高度各自的适配值，保证棋盘绝不超出可用区域（不再有 10px 钳制溢出）
+        cell = min(w / 16f, availH / 24f).coerceAtLeast(1f)
+        cols = 16
+        rows = 24
         boardW = cols * cell
         boardH = rows * cell
         boardLeft = (w - boardW) / 2f
-        boardTop = (availH - boardH) / 2f
+        boardTop = topPad + (availH - boardH) / 2f
         padAreaTop = (h - padH).toFloat()
 
         // 方向键布局（十字）
@@ -132,6 +163,11 @@ class SnakeGameView(context: Context) : GameView(context) {
         started = true
     }
 
+    /**
+     * 在随机空闲位置生成食物。
+     * 逻辑：收集所有不在蛇身上的空位 → 随机选一个 → 设为食物位置。
+     * 如果没有空位（蛇填满整个棋盘），判定玩家获胜。
+     */
     private fun spawnFood() {
         val occupied = body.toSet()
         val free = (0 until cols).flatMap { x -> (0 until rows).map { y -> Pt(x, y) } }
@@ -143,44 +179,61 @@ class SnakeGameView(context: Context) : GameView(context) {
         food = free.random()
     }
 
+    /**
+     * 帧更新（每帧由 GameView 基类调用）。
+     * 使用"帧累积"模式控制蛇的移动速度：每帧增加 dt*speed 的累积量，
+     * 累积满 1 就执行一步移动。speed 越大，每帧累积越快，蛇移动越频繁。
+     */
     override fun update(dt: Float) {
         if (!alive || !started) return
-        acc += dt * speed
-        while (acc >= 1f) {
+        acc += dt * speed          // 累积时间（如 dt=0.016s, speed=5 → 每帧累积 0.08）
+        while (acc >= 1f) {        // 累积满 1 执行一步（可一次执行多步，如切后台回来时）
             acc -= 1f
-            step()
-            if (!alive) return
+            step()                 // 移动一步
+            if (!alive) return     // 撞墙/咬自己后停止
         }
     }
 
+    /**
+     * 蛇移动一步。
+     * 逻辑：应用待定方向 → 计算新头部位置 → 边界检测 → 自咬检测 → 更新蛇身。
+     */
     private fun step() {
-        dirX = nextDirX
+        dirX = nextDirX  // 将待定方向生效（setDir 只设置 nextDir，step 才真正应用）
         dirY = nextDirY
         val head = body.first()
         val nh = Pt(head.x + dirX, head.y + dirY)
+        // 边界检测：新头位置超出棋盘范围
         if (nh.x < 0 || nh.x >= cols || nh.y < 0 || nh.y >= rows) {
             die("撞到墙了")
             return
         }
+        // 自咬检测：新头位置与蛇身任意一节重合
         if (body.any { it == nh }) {
             die("咬到自己了")
             return
         }
-        body.addFirst(nh)
+        body.addFirst(nh)  // 新头插入队首
         if (nh == food) {
+            // 吃到食物：加分、加速、生成新食物（不移除尾部 → 蛇变长）
             score += 10
-            setScore(score)
+            setScore(score)           // 通知 Activity 更新得分显示
             playSound(SoundManager.EAT)
-            if (score % 50 == 0 && speed < 13f) speed += 0.6f
+            if (score % 50 == 0 && speed < 13f) speed += 0.6f  // 每 50 分加速一次
             spawnFood()
         } else {
-            body.removeLast()
+            body.removeLast()  // 未吃到食物：移除尾部 → 蛇长度不变但位置前移
         }
     }
 
+    /**
+     * 蛇死亡处理。
+     * @param reason 死亡原因（显示在结算弹窗）
+     */
     private fun die(reason: String) {
         alive = false
         playSound(SoundManager.LOSE)
+        // GameResult(score, won=false, summary) → Activity 弹出"游戏结束"弹窗
         gameOver(GameResult(score, false, reason + "，蛇身长度 " + body.size))
     }
 
@@ -195,6 +248,11 @@ class SnakeGameView(context: Context) : GameView(context) {
         color = 0xFF8A93A6.toInt()
     }
 
+    /**
+     * 绘制游戏画面（每帧调用，在 update 之后）。
+     * 绘制顺序：背景 → 边界墙 → 网格 → 食物 → 蛇身 → 蛇眼 → 方向键
+     * Canvas 坐标系：左上角为原点 (0,0)，x 向右增大，y 向下增大。
+     */
     override fun drawGame(canvas: Canvas) {
         canvas.drawRect(gameRect, bgPaint)
         if (!started) {
@@ -247,6 +305,11 @@ class SnakeGameView(context: Context) : GameView(context) {
         }
     }
 
+    /**
+     * 重置所有游戏状态并开始新一局。
+     * 被 GameActivity 的重开按钮（↻）和"再来一局"按钮调用。
+     * 注意最后调用 start()——启动帧循环。
+     */
     override fun reset() {
         body.clear()
         val cy = rows / 2

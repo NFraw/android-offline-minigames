@@ -26,12 +26,8 @@ class AllGamesSmokeTest {
         var passed = 0
         var failed = 0
 
-        for (spec in GameRegistry.games) {
-            val intent = if (spec.className.startsWith("hd:")) {
-                Intent(ctx, LgdxGameActivity::class.java).putExtra("game", spec.id)
-            } else {
-                Intent(ctx, GameActivity::class.java).putExtra("game", spec.id)
-            }
+        for (spec in GameRegistry.games.filter { it.runtime is com.minigames.collection.common.GameRuntime.Canvas }) {
+            val intent = Intent(ctx, GameActivity::class.java).putExtra("game", spec.id)
             try {
                 ActivityScenario.launch<Activity>(intent).use { scenario ->
                     // 等待 Activity 存活并进入 RESUMED
@@ -52,3 +48,4 @@ class AllGamesSmokeTest {
         assertTrue("以下游戏启动失败:\n$failures", failed == 0)
     }
 }
+

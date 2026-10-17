@@ -3,7 +3,6 @@ package com.minigames.collection.games.fruit
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Path
 import android.view.MotionEvent
 import android.widget.Toast
 import com.minigames.collection.common.GameResult
@@ -45,6 +44,10 @@ class FruitNinjaView(context: Context) : GameView(context) {
     private var spawnTimer = 0.6f
     private var score = 0
     private var lives = MAX_LIVES
+    /** 本局被切中的炸弹数（用于结算文案还原真实败因）。 */
+    private var bombHits = 0
+    /** 本局漏掉的水果数。 */
+    private var missedFruits = 0
     private var stage = 1
     private var stageTimer = 0f
     private var best = 0
@@ -52,14 +55,18 @@ class FruitNinjaView(context: Context) : GameView(context) {
     private var lastX = 0f
     private var lastY = 0f
     private var hasLast = false
-    private val slash = Path()
+    // 刀痕轨迹：带剩余寿命的点，逐段按年龄淡出，松手后逐渐消失
+    private data class TrailPt(val x: Float, val y: Float, var t: Float)
+    private val trail = ArrayList<TrailPt>()
+    private val TRAIL_LIFE = 0.32f
 
     private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
     private val slashPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x99FFFFFF.toInt()
+        color = 0xFFFFFFFF.toInt()
         strokeWidth = dp(6).toFloat()
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
     }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
@@ -81,30 +88,41 @@ class FruitNinjaView(context: Context) : GameView(context) {
 
     override fun onTouch(event: MotionEvent) {
         if (over || paused) return
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                lastX = event.x
-                lastY = event.y
+        // 必须用 actionMasked 并处理 POINTER_UP：旧实现用 event.action 且没有 POINTER_UP 分支，
+        // 多指操作时抬起其中一指（系统发的是 ACTION_POINTER_UP）不会复位，hasLast 仍为 true
+        // 且 lastX/lastY 停在旧手指位置，下一帧的 MOVE 就会与它连成一条横跨整屏的线段，
+        // 沿途水果（含炸弹）全部被切，玩家会莫名掉命。
+        val idx = event.actionIndex
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                val x = event.getX(idx)
+                val y = event.getY(idx)
+                lastX = x
+                lastY = y
                 hasLast = true
-                slash.rewind()
-                slash.moveTo(lastX, lastY)
+                trail.clear()
+                trail.add(TrailPt(x, y, TRAIL_LIFE))
             }
             MotionEvent.ACTION_MOVE -> {
                 if (!hasLast) return
-                slash.lineTo(event.x, event.y)
+                val x = event.x
+                val y = event.y
+                trail.add(TrailPt(x, y, TRAIL_LIFE))
                 val hit = ArrayList<Fruit>()
                 for (f in fruits) {
                     if (f.cut) continue
-                    if (lineHitsCircle(lastX, lastY, event.x, event.y, f.x, f.y, f.r * 1.1f)) hit.add(f)
+                    if (lineHitsCircle(lastX, lastY, x, y, f.x, f.y, f.r * 1.1f)) hit.add(f)
                 }
                 for (f in hit) {
                     f.cut = true
                     if (f.bomb) {
                         lives--
+                        bombHits++
+                        buzz() // 切中炸弹：震动提示
                         playSound(SoundManager.LOSE)
                         Toast.makeText(context, "切到炸弹，扣一条命！", Toast.LENGTH_SHORT).show()
                         if (lives <= 0) {
-                            endGame("切中炸弹，生命耗尽")
+                            endGame()
                             return
                         }
                     } else {
@@ -113,12 +131,12 @@ class FruitNinjaView(context: Context) : GameView(context) {
                         playSound(SoundManager.EAT)
                     }
                 }
-                lastX = event.x
-                lastY = event.y
+                lastX = x
+                lastY = y
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 hasLast = false
-                slash.rewind()
+                // 松手后轨迹靠淡出消失，不清空
             }
         }
     }
@@ -134,14 +152,28 @@ class FruitNinjaView(context: Context) : GameView(context) {
         return hypot(cx - tx, cy - ty) < r
     }
 
-    private fun endGame(reason: String) {
+    private fun endGame() {
         over = true
         playSound(SoundManager.LOSE)
-        gameOver(GameResult(score, false, reason + "！得分 " + score + " · 最高 " + max(best, score) + " · 到达第 " + stage + " 阶段"))
+        // 用真实的失分来源拼结算文案：旧实现写死"漏掉 3 个水果"，
+        // 实际可能是"切中 1 个炸弹 + 漏掉 2 个水果"，与过程完全对不上。
+        val detail = when {
+            bombHits > 0 && missedFruits > 0 -> "切中 " + bombHits + " 个炸弹、漏掉 " + missedFruits + " 个水果"
+            bombHits > 0 -> "切中 " + bombHits + " 个炸弹"
+            else -> "漏掉 " + missedFruits + " 个水果"
+        }
+        gameOver(GameResult(score, false, detail + "，生命耗尽！得分 " + score + " · 最高 " + max(best, score) + " · 到达第 " + stage + " 阶段"))
     }
 
     override fun update(dt: Float) {
         if (over) return
+        // 刀痕轨迹老化：过期点移除，实现逐渐消失
+        val trailIt = trail.iterator()
+        while (trailIt.hasNext()) {
+            val p = trailIt.next()
+            p.t -= dt
+            if (p.t <= 0f) trailIt.remove()
+        }
         stageTimer += dt
         if (stageTimer >= STAGE_LEN) {
             stageTimer -= STAGE_LEN
@@ -169,9 +201,10 @@ class FruitNinjaView(context: Context) : GameView(context) {
                 it.remove()
                 if (!f.cut && !f.bomb) {
                     lives--
+                    missedFruits++
                     playSound(SoundManager.CLICK)
                     if (lives <= 0) {
-                        endGame("漏掉 3 个水果")
+                        endGame()
                         return
                     }
                 }
@@ -223,8 +256,13 @@ class FruitNinjaView(context: Context) : GameView(context) {
                 canvas.drawText(f.emoji, f.x, f.y - (emojiPaint.ascent() + emojiPaint.descent()) / 2f, emojiPaint)
             }
         }
-        if (!slash.isEmpty) {
-            canvas.drawPath(slash, slashPaint)
+        // 刀痕：按每段的平均剩余寿命决定透明度，头部新、尾部旧
+        for (i in 1 until trail.size) {
+            val a = trail[i - 1]
+            val b = trail[i]
+            val life = ((a.t + b.t) / 2f / TRAIL_LIFE).coerceIn(0f, 1f)
+            slashPaint.alpha = (255 * life).toInt().coerceIn(0, 230)
+            canvas.drawLine(a.x, a.y, b.x, b.y, slashPaint)
         }
         // 顶部信息
         textPaint.textSize = sp(16f)
@@ -238,7 +276,7 @@ class FruitNinjaView(context: Context) : GameView(context) {
         canvas.drawText("第 " + stage + " 阶段", width / 2f, dp(158).toFloat(), textPaint)
         textPaint.color = 0xFF8A93A6.toInt()
         textPaint.textSize = sp(14f)
-        canvas.drawText("滑动切割水果得分 · 避开 💣 · 漏掉水果或切到炸弹扣命", width / 2f, height - dp(26).toFloat(), textPaint)
+        canvas.drawText("滑动切割水果得分 · 避开 💣 · 漏掉水果或切到炸弹扣命", width / 2f, height - dp(66).toFloat(), textPaint)
     }
 
     override fun reset() {
@@ -251,7 +289,9 @@ class FruitNinjaView(context: Context) : GameView(context) {
         best = ScoreStore(context).best("fruit")
         over = false
         hasLast = false
-        slash.rewind()
+        bombHits = 0
+        missedFruits = 0
+        trail.clear()
         setScore(0)
         start()
     }

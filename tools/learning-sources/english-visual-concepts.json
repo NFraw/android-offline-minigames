@@ -1,0 +1,1602 @@
+[
+  {
+    "english": "apple",
+    "chinese": "苹果",
+    "picture": "apple"
+  },
+  {
+    "english": "cat",
+    "chinese": "猫",
+    "picture": "cat"
+  },
+  {
+    "english": "dog",
+    "chinese": "狗",
+    "picture": "dog"
+  },
+  {
+    "english": "fish",
+    "chinese": "鱼",
+    "picture": "fish"
+  },
+  {
+    "english": "sun",
+    "chinese": "太阳",
+    "picture": "sun"
+  },
+  {
+    "english": "moon",
+    "chinese": "月亮",
+    "picture": "moon"
+  },
+  {
+    "english": "tree",
+    "chinese": "树",
+    "picture": "tree"
+  },
+  {
+    "english": "book",
+    "chinese": "书",
+    "picture": "book"
+  },
+  {
+    "english": "ball",
+    "chinese": "足球",
+    "picture": "ball"
+  },
+  {
+    "english": "bird",
+    "chinese": "鸟",
+    "picture": "bird"
+  },
+  {
+    "english": "banana",
+    "chinese": "香蕉",
+    "picture": "banana"
+  },
+  {
+    "english": "flower",
+    "chinese": "花",
+    "picture": "flower"
+  },
+  {
+    "english": "rabbit",
+    "chinese": "兔子",
+    "picture": "rabbit"
+  },
+  {
+    "english": "tiger",
+    "chinese": "老虎",
+    "picture": "tiger"
+  },
+  {
+    "english": "elephant",
+    "chinese": "大象",
+    "picture": "elephant"
+  },
+  {
+    "english": "monkey",
+    "chinese": "猴子",
+    "picture": "monkey"
+  },
+  {
+    "english": "carrot",
+    "chinese": "胡萝卜",
+    "picture": "carrot"
+  },
+  {
+    "english": "orange",
+    "chinese": "橙子",
+    "picture": "orange"
+  },
+  {
+    "english": "car",
+    "chinese": "汽车",
+    "picture": "car"
+  },
+  {
+    "english": "bus",
+    "chinese": "公共汽车",
+    "picture": "bus"
+  },
+  {
+    "english": "bike",
+    "chinese": "自行车",
+    "picture": "bike"
+  },
+  {
+    "english": "house",
+    "chinese": "房子",
+    "picture": "house"
+  },
+  {
+    "english": "star",
+    "chinese": "星星",
+    "picture": "star"
+  },
+  {
+    "english": "cake",
+    "chinese": "蛋糕",
+    "picture": "cake"
+  },
+  {
+    "english": "pear",
+    "chinese": "梨",
+    "picture": "pear"
+  },
+  {
+    "english": "peach",
+    "chinese": "桃子",
+    "picture": "peach"
+  },
+  {
+    "english": "grape",
+    "chinese": "葡萄",
+    "picture": "grape"
+  },
+  {
+    "english": "watermelon",
+    "chinese": "西瓜",
+    "picture": "watermelon"
+  },
+  {
+    "english": "strawberry",
+    "chinese": "草莓",
+    "picture": "strawberry"
+  },
+  {
+    "english": "cherry",
+    "chinese": "樱桃",
+    "picture": "cherry"
+  },
+  {
+    "english": "lemon",
+    "chinese": "柠檬",
+    "picture": "lemon"
+  },
+  {
+    "english": "pineapple",
+    "chinese": "菠萝",
+    "picture": "pineapple"
+  },
+  {
+    "english": "kiwi",
+    "chinese": "猕猴桃",
+    "picture": "kiwi"
+  },
+  {
+    "english": "mango",
+    "chinese": "芒果",
+    "picture": "mango"
+  },
+  {
+    "english": "coconut",
+    "chinese": "椰子",
+    "picture": "coconut"
+  },
+  {
+    "english": "blueberry",
+    "chinese": "蓝莓",
+    "picture": "blueberry"
+  },
+  {
+    "english": "plum",
+    "chinese": "李子",
+    "picture": "plum"
+  },
+  {
+    "english": "apricot",
+    "chinese": "杏",
+    "picture": "apricot"
+  },
+  {
+    "english": "avocado",
+    "chinese": "牛油果",
+    "picture": "avocado"
+  },
+  {
+    "english": "papaya",
+    "chinese": "木瓜",
+    "picture": "papaya"
+  },
+  {
+    "english": "tomato",
+    "chinese": "番茄",
+    "picture": "tomato"
+  },
+  {
+    "english": "potato",
+    "chinese": "土豆",
+    "picture": "potato"
+  },
+  {
+    "english": "cucumber",
+    "chinese": "黄瓜",
+    "picture": "cucumber"
+  },
+  {
+    "english": "onion",
+    "chinese": "洋葱",
+    "picture": "onion"
+  },
+  {
+    "english": "garlic",
+    "chinese": "大蒜",
+    "picture": "garlic"
+  },
+  {
+    "english": "corn",
+    "chinese": "玉米",
+    "picture": "corn"
+  },
+  {
+    "english": "pumpkin",
+    "chinese": "南瓜",
+    "picture": "pumpkin"
+  },
+  {
+    "english": "cabbage",
+    "chinese": "卷心菜",
+    "picture": "cabbage"
+  },
+  {
+    "english": "broccoli",
+    "chinese": "西兰花",
+    "picture": "broccoli"
+  },
+  {
+    "english": "pea",
+    "chinese": "豌豆",
+    "picture": "pea"
+  },
+  {
+    "english": "eggplant",
+    "chinese": "茄子",
+    "picture": "eggplant"
+  },
+  {
+    "english": "mushroom",
+    "chinese": "蘑菇",
+    "picture": "mushroom"
+  },
+  {
+    "english": "lettuce",
+    "chinese": "生菜",
+    "picture": "lettuce"
+  },
+  {
+    "english": "spinach",
+    "chinese": "菠菜",
+    "picture": "spinach"
+  },
+  {
+    "english": "radish",
+    "chinese": "白萝卜",
+    "picture": "radish"
+  },
+  {
+    "english": "chili",
+    "chinese": "辣椒",
+    "picture": "chili"
+  },
+  {
+    "english": "bread",
+    "chinese": "面包",
+    "picture": "bread"
+  },
+  {
+    "english": "rice",
+    "chinese": "米饭",
+    "picture": "rice"
+  },
+  {
+    "english": "noodle",
+    "chinese": "面条",
+    "picture": "noodle"
+  },
+  {
+    "english": "dumpling",
+    "chinese": "饺子",
+    "picture": "dumpling"
+  },
+  {
+    "english": "egg",
+    "chinese": "鸡蛋",
+    "picture": "egg"
+  },
+  {
+    "english": "milk",
+    "chinese": "牛奶",
+    "picture": "milk"
+  },
+  {
+    "english": "cheese",
+    "chinese": "奶酪",
+    "picture": "cheese"
+  },
+  {
+    "english": "butter",
+    "chinese": "黄油",
+    "picture": "butter"
+  },
+  {
+    "english": "yogurt",
+    "chinese": "酸奶",
+    "picture": "yogurt"
+  },
+  {
+    "english": "juice",
+    "chinese": "果汁",
+    "picture": "juice"
+  },
+  {
+    "english": "water",
+    "chinese": "饮用水",
+    "picture": "water"
+  },
+  {
+    "english": "tea",
+    "chinese": "茶",
+    "picture": "tea"
+  },
+  {
+    "english": "coffee",
+    "chinese": "咖啡",
+    "picture": "coffee"
+  },
+  {
+    "english": "soup",
+    "chinese": "汤",
+    "picture": "soup"
+  },
+  {
+    "english": "sandwich",
+    "chinese": "三明治",
+    "picture": "sandwich"
+  },
+  {
+    "english": "hamburger",
+    "chinese": "汉堡",
+    "picture": "hamburger"
+  },
+  {
+    "english": "pizza",
+    "chinese": "比萨",
+    "picture": "pizza"
+  },
+  {
+    "english": "biscuit",
+    "chinese": "饼干",
+    "picture": "biscuit"
+  },
+  {
+    "english": "chocolate",
+    "chinese": "巧克力",
+    "picture": "chocolate"
+  },
+  {
+    "english": "candy",
+    "chinese": "糖果",
+    "picture": "candy"
+  },
+  {
+    "english": "honey",
+    "chinese": "蜂蜜",
+    "picture": "honey"
+  },
+  {
+    "english": "jam",
+    "chinese": "果酱",
+    "picture": "jam"
+  },
+  {
+    "english": "sausage",
+    "chinese": "香肠",
+    "picture": "sausage"
+  },
+  {
+    "english": "steak",
+    "chinese": "牛排",
+    "picture": "steak"
+  },
+  {
+    "english": "chicken",
+    "chinese": "鸡肉",
+    "picture": "chicken"
+  },
+  {
+    "english": "shrimp",
+    "chinese": "虾",
+    "picture": "shrimp"
+  },
+  {
+    "english": "crab",
+    "chinese": "螃蟹",
+    "picture": "crab"
+  },
+  {
+    "english": "lobster",
+    "chinese": "龙虾",
+    "picture": "lobster"
+  },
+  {
+    "english": "salad",
+    "chinese": "沙拉",
+    "picture": "salad"
+  },
+  {
+    "english": "popcorn",
+    "chinese": "爆米花",
+    "picture": "popcorn"
+  },
+  {
+    "english": "ice-cream",
+    "chinese": "冰淇淋",
+    "picture": "ice-cream"
+  },
+  {
+    "english": "pancake",
+    "chinese": "薄煎饼",
+    "picture": "pancake"
+  },
+  {
+    "english": "horse",
+    "chinese": "马",
+    "picture": "horse"
+  },
+  {
+    "english": "cow",
+    "chinese": "奶牛",
+    "picture": "cow"
+  },
+  {
+    "english": "sheep",
+    "chinese": "绵羊",
+    "picture": "sheep"
+  },
+  {
+    "english": "goat",
+    "chinese": "山羊",
+    "picture": "goat"
+  },
+  {
+    "english": "pig",
+    "chinese": "猪",
+    "picture": "pig"
+  },
+  {
+    "english": "duck",
+    "chinese": "鸭",
+    "picture": "duck"
+  },
+  {
+    "english": "goose",
+    "chinese": "鹅",
+    "picture": "goose"
+  },
+  {
+    "english": "rooster",
+    "chinese": "公鸡",
+    "picture": "rooster"
+  },
+  {
+    "english": "chick",
+    "chinese": "小鸡",
+    "picture": "chick"
+  },
+  {
+    "english": "panda",
+    "chinese": "大熊猫",
+    "picture": "panda"
+  },
+  {
+    "english": "bear",
+    "chinese": "棕熊",
+    "picture": "bear"
+  },
+  {
+    "english": "lion",
+    "chinese": "狮子",
+    "picture": "lion"
+  },
+  {
+    "english": "wolf",
+    "chinese": "狼",
+    "picture": "wolf"
+  },
+  {
+    "english": "fox",
+    "chinese": "狐狸",
+    "picture": "fox"
+  },
+  {
+    "english": "deer",
+    "chinese": "鹿",
+    "picture": "deer"
+  },
+  {
+    "english": "giraffe",
+    "chinese": "长颈鹿",
+    "picture": "giraffe"
+  },
+  {
+    "english": "zebra",
+    "chinese": "斑马",
+    "picture": "zebra"
+  },
+  {
+    "english": "hippo",
+    "chinese": "河马",
+    "picture": "hippo"
+  },
+  {
+    "english": "rhino",
+    "chinese": "犀牛",
+    "picture": "rhino"
+  },
+  {
+    "english": "camel",
+    "chinese": "骆驼",
+    "picture": "camel"
+  },
+  {
+    "english": "kangaroo",
+    "chinese": "袋鼠",
+    "picture": "kangaroo"
+  },
+  {
+    "english": "koala",
+    "chinese": "考拉",
+    "picture": "koala"
+  },
+  {
+    "english": "squirrel",
+    "chinese": "松鼠",
+    "picture": "squirrel"
+  },
+  {
+    "english": "hedgehog",
+    "chinese": "刺猬",
+    "picture": "hedgehog"
+  },
+  {
+    "english": "mouse",
+    "chinese": "老鼠",
+    "picture": "mouse"
+  },
+  {
+    "english": "hamster",
+    "chinese": "仓鼠",
+    "picture": "hamster"
+  },
+  {
+    "english": "bat",
+    "chinese": "蝙蝠",
+    "picture": "bat"
+  },
+  {
+    "english": "otter",
+    "chinese": "水獭",
+    "picture": "otter"
+  },
+  {
+    "english": "beaver",
+    "chinese": "河狸",
+    "picture": "beaver"
+  },
+  {
+    "english": "raccoon",
+    "chinese": "浣熊",
+    "picture": "raccoon"
+  },
+  {
+    "english": "sloth",
+    "chinese": "树懒",
+    "picture": "sloth"
+  },
+  {
+    "english": "leopard",
+    "chinese": "豹",
+    "picture": "leopard"
+  },
+  {
+    "english": "frog",
+    "chinese": "青蛙",
+    "picture": "frog"
+  },
+  {
+    "english": "turtle",
+    "chinese": "海龟",
+    "picture": "turtle"
+  },
+  {
+    "english": "snake",
+    "chinese": "蛇",
+    "picture": "snake"
+  },
+  {
+    "english": "lizard",
+    "chinese": "蜥蜴",
+    "picture": "lizard"
+  },
+  {
+    "english": "crocodile",
+    "chinese": "鳄鱼",
+    "picture": "crocodile"
+  },
+  {
+    "english": "dolphin",
+    "chinese": "海豚",
+    "picture": "dolphin"
+  },
+  {
+    "english": "whale",
+    "chinese": "鲸鱼",
+    "picture": "whale"
+  },
+  {
+    "english": "shark",
+    "chinese": "鲨鱼",
+    "picture": "shark"
+  },
+  {
+    "english": "octopus",
+    "chinese": "章鱼",
+    "picture": "octopus"
+  },
+  {
+    "english": "jellyfish",
+    "chinese": "水母",
+    "picture": "jellyfish"
+  },
+  {
+    "english": "seahorse",
+    "chinese": "海马",
+    "picture": "seahorse"
+  },
+  {
+    "english": "starfish",
+    "chinese": "海星",
+    "picture": "starfish"
+  },
+  {
+    "english": "seal",
+    "chinese": "海豹",
+    "picture": "seal"
+  },
+  {
+    "english": "penguin",
+    "chinese": "企鹅",
+    "picture": "penguin"
+  },
+  {
+    "english": "walrus",
+    "chinese": "海象",
+    "picture": "walrus"
+  },
+  {
+    "english": "goldfish",
+    "chinese": "金鱼",
+    "picture": "goldfish"
+  },
+  {
+    "english": "eagle",
+    "chinese": "鹰",
+    "picture": "eagle"
+  },
+  {
+    "english": "owl",
+    "chinese": "猫头鹰",
+    "picture": "owl"
+  },
+  {
+    "english": "parrot",
+    "chinese": "鹦鹉",
+    "picture": "parrot"
+  },
+  {
+    "english": "peacock",
+    "chinese": "孔雀",
+    "picture": "peacock"
+  },
+  {
+    "english": "swan",
+    "chinese": "天鹅",
+    "picture": "swan"
+  },
+  {
+    "english": "flamingo",
+    "chinese": "火烈鸟",
+    "picture": "flamingo"
+  },
+  {
+    "english": "woodpecker",
+    "chinese": "啄木鸟",
+    "picture": "woodpecker"
+  },
+  {
+    "english": "sparrow",
+    "chinese": "麻雀",
+    "picture": "sparrow"
+  },
+  {
+    "english": "ostrich",
+    "chinese": "鸵鸟",
+    "picture": "ostrich"
+  },
+  {
+    "english": "butterfly",
+    "chinese": "蝴蝶",
+    "picture": "butterfly"
+  },
+  {
+    "english": "bee",
+    "chinese": "蜜蜂",
+    "picture": "bee"
+  },
+  {
+    "english": "ant",
+    "chinese": "蚂蚁",
+    "picture": "ant"
+  },
+  {
+    "english": "ladybird",
+    "chinese": "瓢虫",
+    "picture": "ladybird"
+  },
+  {
+    "english": "dragonfly",
+    "chinese": "蜻蜓",
+    "picture": "dragonfly"
+  },
+  {
+    "english": "snail",
+    "chinese": "蜗牛",
+    "picture": "snail"
+  },
+  {
+    "english": "spider",
+    "chinese": "蜘蛛",
+    "picture": "spider"
+  },
+  {
+    "english": "shirt",
+    "chinese": "衬衫",
+    "picture": "shirt"
+  },
+  {
+    "english": "coat",
+    "chinese": "大衣",
+    "picture": "coat"
+  },
+  {
+    "english": "jacket",
+    "chinese": "夹克",
+    "picture": "jacket"
+  },
+  {
+    "english": "dress",
+    "chinese": "连衣裙",
+    "picture": "dress"
+  },
+  {
+    "english": "skirt",
+    "chinese": "半身裙",
+    "picture": "skirt"
+  },
+  {
+    "english": "shorts",
+    "chinese": "短裤",
+    "picture": "shorts"
+  },
+  {
+    "english": "trousers",
+    "chinese": "长裤",
+    "picture": "trousers"
+  },
+  {
+    "english": "sweater",
+    "chinese": "毛衣",
+    "picture": "sweater"
+  },
+  {
+    "english": "hat",
+    "chinese": "帽子",
+    "picture": "hat"
+  },
+  {
+    "english": "cap",
+    "chinese": "棒球帽",
+    "picture": "cap"
+  },
+  {
+    "english": "scarf",
+    "chinese": "围巾",
+    "picture": "scarf"
+  },
+  {
+    "english": "glove",
+    "chinese": "手套",
+    "picture": "glove"
+  },
+  {
+    "english": "sock",
+    "chinese": "袜子",
+    "picture": "sock"
+  },
+  {
+    "english": "shoe",
+    "chinese": "鞋",
+    "picture": "shoe"
+  },
+  {
+    "english": "boot",
+    "chinese": "靴子",
+    "picture": "boot"
+  },
+  {
+    "english": "slipper",
+    "chinese": "拖鞋",
+    "picture": "slipper"
+  },
+  {
+    "english": "umbrella",
+    "chinese": "雨伞",
+    "picture": "umbrella"
+  },
+  {
+    "english": "backpack",
+    "chinese": "双肩书包",
+    "picture": "backpack"
+  },
+  {
+    "english": "handbag",
+    "chinese": "手提包",
+    "picture": "handbag"
+  },
+  {
+    "english": "suitcase",
+    "chinese": "行李箱",
+    "picture": "suitcase"
+  },
+  {
+    "english": "belt",
+    "chinese": "皮带",
+    "picture": "belt"
+  },
+  {
+    "english": "tie",
+    "chinese": "领带",
+    "picture": "tie"
+  },
+  {
+    "english": "watch",
+    "chinese": "手表",
+    "picture": "watch"
+  },
+  {
+    "english": "ring",
+    "chinese": "戒指",
+    "picture": "ring"
+  },
+  {
+    "english": "necklace",
+    "chinese": "项链",
+    "picture": "necklace"
+  },
+  {
+    "english": "bracelet",
+    "chinese": "手链",
+    "picture": "bracelet"
+  },
+  {
+    "english": "glasses",
+    "chinese": "眼镜",
+    "picture": "glasses"
+  },
+  {
+    "english": "sunglasses",
+    "chinese": "太阳镜",
+    "picture": "sunglasses"
+  },
+  {
+    "english": "mask",
+    "chinese": "口罩",
+    "picture": "mask"
+  },
+  {
+    "english": "helmet",
+    "chinese": "头盔",
+    "picture": "helmet"
+  },
+  {
+    "english": "crown",
+    "chinese": "王冠",
+    "picture": "crown"
+  },
+  {
+    "english": "raincoat",
+    "chinese": "雨衣",
+    "picture": "raincoat"
+  },
+  {
+    "english": "pencil",
+    "chinese": "铅笔",
+    "picture": "pencil"
+  },
+  {
+    "english": "pen",
+    "chinese": "钢笔",
+    "picture": "pen"
+  },
+  {
+    "english": "eraser",
+    "chinese": "橡皮",
+    "picture": "eraser"
+  },
+  {
+    "english": "ruler",
+    "chinese": "直尺",
+    "picture": "ruler"
+  },
+  {
+    "english": "scissors",
+    "chinese": "剪刀",
+    "picture": "scissors"
+  },
+  {
+    "english": "glue",
+    "chinese": "胶水",
+    "picture": "glue"
+  },
+  {
+    "english": "notebook",
+    "chinese": "笔记本",
+    "picture": "notebook"
+  },
+  {
+    "english": "crayon",
+    "chinese": "蜡笔",
+    "picture": "crayon"
+  },
+  {
+    "english": "paintbrush",
+    "chinese": "画笔",
+    "picture": "paintbrush"
+  },
+  {
+    "english": "palette",
+    "chinese": "调色盘",
+    "picture": "palette"
+  },
+  {
+    "english": "chalk",
+    "chinese": "粉笔",
+    "picture": "chalk"
+  },
+  {
+    "english": "blackboard",
+    "chinese": "黑板",
+    "picture": "blackboard"
+  },
+  {
+    "english": "desk",
+    "chinese": "课桌",
+    "picture": "desk"
+  },
+  {
+    "english": "chair",
+    "chinese": "椅子",
+    "picture": "chair"
+  },
+  {
+    "english": "map",
+    "chinese": "地图",
+    "picture": "map"
+  },
+  {
+    "english": "globe",
+    "chinese": "地球仪",
+    "picture": "globe"
+  },
+  {
+    "english": "clock",
+    "chinese": "时钟",
+    "picture": "clock"
+  },
+  {
+    "english": "calendar",
+    "chinese": "日历",
+    "picture": "calendar"
+  },
+  {
+    "english": "stamp",
+    "chinese": "邮票",
+    "picture": "stamp"
+  },
+  {
+    "english": "envelope",
+    "chinese": "信封",
+    "picture": "envelope"
+  },
+  {
+    "english": "letter",
+    "chinese": "信件",
+    "picture": "letter"
+  },
+  {
+    "english": "newspaper",
+    "chinese": "报纸",
+    "picture": "newspaper"
+  },
+  {
+    "english": "magazine",
+    "chinese": "杂志",
+    "picture": "magazine"
+  },
+  {
+    "english": "dictionary",
+    "chinese": "字典",
+    "picture": "dictionary"
+  },
+  {
+    "english": "calculator",
+    "chinese": "计算器",
+    "picture": "calculator"
+  },
+  {
+    "english": "computer",
+    "chinese": "台式电脑",
+    "picture": "computer"
+  },
+  {
+    "english": "laptop",
+    "chinese": "笔记本电脑",
+    "picture": "laptop"
+  },
+  {
+    "english": "keyboard",
+    "chinese": "键盘",
+    "picture": "keyboard"
+  },
+  {
+    "english": "printer",
+    "chinese": "打印机",
+    "picture": "printer"
+  },
+  {
+    "english": "camera",
+    "chinese": "照相机",
+    "picture": "camera"
+  },
+  {
+    "english": "phone",
+    "chinese": "电话",
+    "picture": "phone"
+  },
+  {
+    "english": "radio",
+    "chinese": "收音机",
+    "picture": "radio"
+  },
+  {
+    "english": "bed",
+    "chinese": "床",
+    "picture": "bed"
+  },
+  {
+    "english": "pillow",
+    "chinese": "枕头",
+    "picture": "pillow"
+  },
+  {
+    "english": "blanket",
+    "chinese": "毯子",
+    "picture": "blanket"
+  },
+  {
+    "english": "sofa",
+    "chinese": "沙发",
+    "picture": "sofa"
+  },
+  {
+    "english": "table",
+    "chinese": "餐桌",
+    "picture": "table"
+  },
+  {
+    "english": "cupboard",
+    "chinese": "橱柜",
+    "picture": "cupboard"
+  },
+  {
+    "english": "shelf",
+    "chinese": "书架",
+    "picture": "shelf"
+  },
+  {
+    "english": "mirror",
+    "chinese": "镜子",
+    "picture": "mirror"
+  },
+  {
+    "english": "lamp",
+    "chinese": "台灯",
+    "picture": "lamp"
+  },
+  {
+    "english": "fan",
+    "chinese": "电风扇",
+    "picture": "fan"
+  },
+  {
+    "english": "fridge",
+    "chinese": "冰箱",
+    "picture": "fridge"
+  },
+  {
+    "english": "oven",
+    "chinese": "烤箱",
+    "picture": "oven"
+  },
+  {
+    "english": "kettle",
+    "chinese": "水壶",
+    "picture": "kettle"
+  },
+  {
+    "english": "toaster",
+    "chinese": "烤面包机",
+    "picture": "toaster"
+  },
+  {
+    "english": "washing-machine",
+    "chinese": "洗衣机",
+    "picture": "washing-machine"
+  },
+  {
+    "english": "vacuum-cleaner",
+    "chinese": "吸尘器",
+    "picture": "vacuum-cleaner"
+  },
+  {
+    "english": "cup",
+    "chinese": "杯子",
+    "picture": "cup"
+  },
+  {
+    "english": "mug",
+    "chinese": "马克杯",
+    "picture": "mug"
+  },
+  {
+    "english": "bowl",
+    "chinese": "碗",
+    "picture": "bowl"
+  },
+  {
+    "english": "plate",
+    "chinese": "盘子",
+    "picture": "plate"
+  },
+  {
+    "english": "spoon",
+    "chinese": "勺子",
+    "picture": "spoon"
+  },
+  {
+    "english": "fork",
+    "chinese": "叉子",
+    "picture": "fork"
+  },
+  {
+    "english": "knife",
+    "chinese": "餐刀",
+    "picture": "knife"
+  },
+  {
+    "english": "chopsticks",
+    "chinese": "筷子",
+    "picture": "chopsticks"
+  },
+  {
+    "english": "bottle",
+    "chinese": "瓶子",
+    "picture": "bottle"
+  },
+  {
+    "english": "teapot",
+    "chinese": "茶壶",
+    "picture": "teapot"
+  },
+  {
+    "english": "pan",
+    "chinese": "平底锅",
+    "picture": "pan"
+  },
+  {
+    "english": "pot",
+    "chinese": "炖锅",
+    "picture": "pot"
+  },
+  {
+    "english": "ladle",
+    "chinese": "长柄汤勺",
+    "picture": "ladle"
+  },
+  {
+    "english": "basket",
+    "chinese": "篮子",
+    "picture": "basket"
+  },
+  {
+    "english": "tray",
+    "chinese": "托盘",
+    "picture": "tray"
+  },
+  {
+    "english": "napkin",
+    "chinese": "餐巾",
+    "picture": "napkin"
+  },
+  {
+    "english": "soap",
+    "chinese": "肥皂",
+    "picture": "soap"
+  },
+  {
+    "english": "toothbrush",
+    "chinese": "牙刷",
+    "picture": "toothbrush"
+  },
+  {
+    "english": "toothpaste",
+    "chinese": "牙膏",
+    "picture": "toothpaste"
+  },
+  {
+    "english": "towel",
+    "chinese": "毛巾",
+    "picture": "towel"
+  },
+  {
+    "english": "comb",
+    "chinese": "梳子",
+    "picture": "comb"
+  },
+  {
+    "english": "shampoo",
+    "chinese": "洗发水",
+    "picture": "shampoo"
+  },
+  {
+    "english": "bathtub",
+    "chinese": "浴缸",
+    "picture": "bathtub"
+  },
+  {
+    "english": "shower",
+    "chinese": "淋浴器",
+    "picture": "shower"
+  },
+  {
+    "english": "toilet",
+    "chinese": "马桶",
+    "picture": "toilet"
+  },
+  {
+    "english": "tap",
+    "chinese": "水龙头",
+    "picture": "tap"
+  },
+  {
+    "english": "bucket",
+    "chinese": "水桶",
+    "picture": "bucket"
+  },
+  {
+    "english": "broom",
+    "chinese": "扫帚",
+    "picture": "broom"
+  },
+  {
+    "english": "mop",
+    "chinese": "拖把",
+    "picture": "mop"
+  },
+  {
+    "english": "sponge",
+    "chinese": "海绵",
+    "picture": "sponge"
+  },
+  {
+    "english": "bin",
+    "chinese": "垃圾桶",
+    "picture": "bin"
+  },
+  {
+    "english": "tissue",
+    "chinese": "纸巾",
+    "picture": "tissue"
+  },
+  {
+    "english": "train",
+    "chinese": "火车",
+    "picture": "train"
+  },
+  {
+    "english": "plane",
+    "chinese": "飞机",
+    "picture": "plane"
+  },
+  {
+    "english": "ship",
+    "chinese": "轮船",
+    "picture": "ship"
+  },
+  {
+    "english": "boat",
+    "chinese": "小船",
+    "picture": "boat"
+  },
+  {
+    "english": "truck",
+    "chinese": "卡车",
+    "picture": "truck"
+  },
+  {
+    "english": "taxi",
+    "chinese": "出租车",
+    "picture": "taxi"
+  },
+  {
+    "english": "ambulance",
+    "chinese": "救护车",
+    "picture": "ambulance"
+  },
+  {
+    "english": "fire-engine",
+    "chinese": "消防车",
+    "picture": "fire-engine"
+  },
+  {
+    "english": "motorcycle",
+    "chinese": "摩托车",
+    "picture": "motorcycle"
+  },
+  {
+    "english": "helicopter",
+    "chinese": "直升机",
+    "picture": "helicopter"
+  },
+  {
+    "english": "rocket",
+    "chinese": "火箭",
+    "picture": "rocket"
+  },
+  {
+    "english": "submarine",
+    "chinese": "潜水艇",
+    "picture": "submarine"
+  },
+  {
+    "english": "tractor",
+    "chinese": "拖拉机",
+    "picture": "tractor"
+  },
+  {
+    "english": "tram",
+    "chinese": "有轨电车",
+    "picture": "tram"
+  },
+  {
+    "english": "van",
+    "chinese": "厢式货车",
+    "picture": "van"
+  },
+  {
+    "english": "canoe",
+    "chinese": "独木舟",
+    "picture": "canoe"
+  },
+  {
+    "english": "bridge",
+    "chinese": "桥",
+    "picture": "bridge"
+  },
+  {
+    "english": "tower",
+    "chinese": "高塔",
+    "picture": "tower"
+  },
+  {
+    "english": "castle",
+    "chinese": "城堡",
+    "picture": "castle"
+  },
+  {
+    "english": "lighthouse",
+    "chinese": "灯塔",
+    "picture": "lighthouse"
+  },
+  {
+    "english": "tent",
+    "chinese": "帐篷",
+    "picture": "tent"
+  },
+  {
+    "english": "windmill",
+    "chinese": "风车",
+    "picture": "windmill"
+  },
+  {
+    "english": "fountain",
+    "chinese": "喷泉",
+    "picture": "fountain"
+  },
+  {
+    "english": "bench",
+    "chinese": "长椅",
+    "picture": "bench"
+  },
+  {
+    "english": "fence",
+    "chinese": "栅栏",
+    "picture": "fence"
+  },
+  {
+    "english": "gate",
+    "chinese": "大门",
+    "picture": "gate"
+  },
+  {
+    "english": "door",
+    "chinese": "房门",
+    "picture": "door"
+  },
+  {
+    "english": "window",
+    "chinese": "窗户",
+    "picture": "window"
+  },
+  {
+    "english": "stairs",
+    "chinese": "楼梯",
+    "picture": "stairs"
+  },
+  {
+    "english": "roof",
+    "chinese": "屋顶",
+    "picture": "roof"
+  },
+  {
+    "english": "chimney",
+    "chinese": "烟囱",
+    "picture": "chimney"
+  },
+  {
+    "english": "balcony",
+    "chinese": "阳台",
+    "picture": "balcony"
+  },
+  {
+    "english": "mountain",
+    "chinese": "高山",
+    "picture": "mountain"
+  },
+  {
+    "english": "river",
+    "chinese": "河流",
+    "picture": "river"
+  },
+  {
+    "english": "lake",
+    "chinese": "湖泊",
+    "picture": "lake"
+  },
+  {
+    "english": "sea",
+    "chinese": "大海",
+    "picture": "sea"
+  },
+  {
+    "english": "beach",
+    "chinese": "沙滩",
+    "picture": "beach"
+  },
+  {
+    "english": "island",
+    "chinese": "海岛",
+    "picture": "island"
+  },
+  {
+    "english": "forest",
+    "chinese": "森林",
+    "picture": "forest"
+  },
+  {
+    "english": "desert",
+    "chinese": "沙漠",
+    "picture": "desert"
+  },
+  {
+    "english": "waterfall",
+    "chinese": "瀑布",
+    "picture": "waterfall"
+  },
+  {
+    "english": "volcano",
+    "chinese": "火山",
+    "picture": "volcano"
+  },
+  {
+    "english": "cave",
+    "chinese": "洞穴",
+    "picture": "cave"
+  },
+  {
+    "english": "hill",
+    "chinese": "小山丘",
+    "picture": "hill"
+  },
+  {
+    "english": "rainbow",
+    "chinese": "彩虹",
+    "picture": "rainbow"
+  },
+  {
+    "english": "cloud",
+    "chinese": "云朵",
+    "picture": "cloud"
+  },
+  {
+    "english": "rain",
+    "chinese": "雨",
+    "picture": "rain"
+  },
+  {
+    "english": "snow",
+    "chinese": "雪",
+    "picture": "snow"
+  },
+  {
+    "english": "snowman",
+    "chinese": "雪人",
+    "picture": "snowman"
+  },
+  {
+    "english": "snowflake",
+    "chinese": "雪花",
+    "picture": "snowflake"
+  },
+  {
+    "english": "lightning",
+    "chinese": "闪电",
+    "picture": "lightning"
+  },
+  {
+    "english": "tornado",
+    "chinese": "龙卷风",
+    "picture": "tornado"
+  },
+  {
+    "english": "leaf",
+    "chinese": "树叶",
+    "picture": "leaf"
+  },
+  {
+    "english": "grass",
+    "chinese": "草",
+    "picture": "grass"
+  },
+  {
+    "english": "cactus",
+    "chinese": "仙人掌",
+    "picture": "cactus"
+  },
+  {
+    "english": "bamboo",
+    "chinese": "竹子",
+    "picture": "bamboo"
+  }
+]

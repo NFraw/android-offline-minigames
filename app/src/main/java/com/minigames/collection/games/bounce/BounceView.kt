@@ -56,18 +56,24 @@ class BounceView(context: Context) : GameView(context) {
 
     override fun onTouch(event: MotionEvent) {
         if (over || paused) return
-        paddleX = event.x.coerceIn(paddleW / 2f, width - paddleW / 2f)
         if (!launched && event.actionMasked == MotionEvent.ACTION_DOWN) {
-            launch()
+            // 发球方向 = 点击位置相对挡板中心的偏移：点挡板左半边往左上飞，右半边往右上飞。
+            // 旧实现是"先把挡板瞬移到手指处、再用 (ballX - paddleX) 算偏移"，而 ballX 还停在
+            // 上一帧的挡板位置，于是 off 实际等于"手指这一下跳了多远 / 半个挡板宽"，
+            // 与瞄准意图无关：在屏幕最右点一下发球，球会以最高 3.2 倍设定速度朝反方向横飞
+            // （第 69 行原有 vx 也没有上限），同时挡板还会瞬间跳位。
+            launch(((event.x - paddleX) / (paddleW / 2f)).coerceIn(-1f, 1f))
+            return  // 发球这一下不移动挡板
         }
+        paddleX = event.x.coerceIn(paddleW / 2f, width - paddleW / 2f)
     }
 
-    private fun launch() {
+    private fun launch(off: Float) {
         launched = true
-        val off = (ballX - paddleX) / (paddleW / 2f)
-        vx = off * speed * 0.5f
-        if (abs(vx) < speed * 0.15f) vx = if (off >= 0) speed * 0.15f else -speed * 0.15f
-        vy = -speed * 0.8f
+        // 发球带最小水平分量：避免球纯垂直上下落，玩家几乎无反应时间
+        vx = (off * speed * 0.4f).coerceIn(-speed * 0.4f, speed * 0.4f)
+        if (abs(vx) < speed * 0.18f) vx = if (off >= 0f) speed * 0.18f else -speed * 0.18f
+        vy = -speed * 0.72f
         playSound(SoundManager.MOVE)
     }
 
@@ -80,7 +86,6 @@ class BounceView(context: Context) : GameView(context) {
             invalidate()
             return
         }
-        val prevY = ballY
         ballX += vx * dt
         ballY += vy * dt
         if (ballX - ballR < 0) {
@@ -95,16 +100,16 @@ class BounceView(context: Context) : GameView(context) {
             ballY = ballR
             vy = abs(vy)
         }
-        // 挡板：球下落（vy>0）且从上一帧在挡板顶平面上方，这一帧穿到下方时反弹。
-        // 注意方向：球在下落，ballY 只会变大，判定必须是「上帧在上、本帧在下」，
-        // 写反会导致该条件永远不成立（死代码），挡板永远接不住球。
-        if (vy > 0 && prevY + ballR <= height - paddleH && ballY + ballR >= height - paddleH &&
+        // 挡板：窗口判定（与打砖块一致，已运行时验证）。球下落（vy>0）、球底已进入挡板顶平面、
+        // 球顶未超出挡板高度窗口内即可反弹；比「上一帧在上、本帧穿到下」的穿越判定更宽容，
+        // 快速下落时也必然命中，不会出现"穿过去"漏接。
+        if (vy > 0 && ballY + ballR >= height - paddleH && ballY - ballR <= height - paddleH + dp(12).toFloat() &&
             abs(ballX - paddleX) < paddleW / 2f + ballR
         ) {
             ballY = height - paddleH - ballR
             vy = -abs(vy)
             val off = (ballX - paddleX) / (paddleW / 2f)
-            vx = off * speed * 0.7f
+            vx = off * speed * 0.65f
             if (abs(vx) < speed * 0.15f) vx = if (off >= 0) speed * 0.15f else -speed * 0.15f
             playSound(SoundManager.MOVE)
         }
@@ -168,7 +173,19 @@ class BounceView(context: Context) : GameView(context) {
                 vy = if (ballY < top) -abs(vy) else abs(vy)
                 ballY = if (ballY < top) top - ballR else bottom + ballR
             }
-            else -> if (abs(vx) > abs(vy)) vx = -vx else vy = -vy
+            else -> {
+                // 球心已经落在砖块内部（dx、dy 都接近 0）：此时既无法按接触面选轴，
+                // 也必须把球推出去。旧实现只翻转速度、不修正位置，球会嵌在砖块里，
+                // 之后每帧都满足命中条件，表现为"贴着方块墙逐帧连续击碎"、
+                // 一块 3 血砖一帧掉多点耐久并多记分。
+                if (abs(vx) > abs(vy)) {
+                    vx = -vx
+                    ballX = if (ballX < (left + right) / 2f) left - ballR else right + ballR
+                } else {
+                    vy = -vy
+                    ballY = if (ballY < (top + bottom) / 2f) top - ballR else bottom + ballR
+                }
+            }
         }
     }
 

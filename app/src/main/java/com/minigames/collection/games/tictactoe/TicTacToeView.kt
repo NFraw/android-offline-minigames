@@ -61,8 +61,11 @@ class TicTacToeView(context: Context) : GameView(context) {
 
     override fun onTouch(event: MotionEvent) {
         if (event.action != MotionEvent.ACTION_DOWN || over || paused) return
-        val c = ((event.x - boardLeft) / cell).toInt()
-        val r = ((event.y - boardTop) / cell).toInt()
+        val fc = (event.x - boardLeft) / cell
+        val fr = (event.y - boardTop) / cell
+        if (fc < 0f || fr < 0f) return  // 负值 toInt() 向零截断会把棋盘左/上外侧一格解析成第 0 行/列，误落子
+        val c = fc.toInt()
+        val r = fr.toInt()
         if (r !in 0 until N || c !in 0 until N) return
         val idx = r * N + c
         if (board[idx] != EMPTY) return

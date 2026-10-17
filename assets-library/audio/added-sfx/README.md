@@ -1,0 +1,1 @@
+音效补充：diceThrow1.ogg来自Kenney Casino Audio（CC0），官方 https://kenney.nl/assets/casino-audio ；下载镜像 kenney_casinoaudio/Audio/diceThrow1.ogg。dice_roll.wav由该源转为16bit/22050Hz/单声道。key_note.wav为本项目原创加法合成C4短琴音，复用一个采样播放多个音高。已有26音效来源保留在kenney-sfx-backup/tools/sfx/README.md。所有短音效受设置控制，最多4路并发，同音限频，源OGG/解码中间文件不打包。

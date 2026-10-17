@@ -77,8 +77,10 @@ class CurlingPhysics(val stoneR: Float, val restitution: Float = 0.4f) {
             resolveOverlaps()  // 再分离几何重叠
             boundsClamp()
         }
-        // 摩擦阻尼：以 60fps 为基准（每帧 ×0.987），随 dt 归一化
-        val f = Math.pow(0.987, (60.0 * dt).toDouble()).toFloat()
+        // 摩擦阻尼：以 60fps 为基准（每帧 ×0.980），随 dt 归一化。
+        // 原值 0.987 偏小：满力投出的壶要滑行约 7 秒才停，一局 4 投就是近 30 秒纯等待，节奏拖沓。
+        // 0.980 约 3.9 秒，既保留冰壶的滑行感，又不至于让玩家干等。
+        val f = Math.pow(0.980, (60.0 * dt).toDouble()).toFloat()
         var any = false
         for (s in stones) {
             s.vx *= f

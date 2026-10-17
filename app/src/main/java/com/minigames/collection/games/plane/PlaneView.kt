@@ -83,13 +83,13 @@ class PlaneView(context: Context) : GameView(context) {
             if (e.y > height + dp(30).toFloat()) {
                 eit.remove()
                 lives--
-                playSound(SoundManager.LOSE)
                 if (lives <= 0) {
                     over = true
                     playSound(SoundManager.LOSE)
                     gameOver(GameResult(score, false, "敌机突破防线！得分 " + score))
                     return
                 }
+                playSound(SoundManager.LOSE)  // 只扣命时播一次，最后一条命不再重复播
             }
         }
         // 子弹命中敌机
@@ -139,7 +139,7 @@ class PlaneView(context: Context) : GameView(context) {
         textPaint.color = 0xFFFF6B6B.toInt()
         canvas.drawText("❤ ".repeat(lives.coerceAtLeast(0)), width / 2f, dp(92).toFloat(), textPaint)
         hintPaint.color = 0xFF8A93A6.toInt()
-        canvas.drawText("拖动飞机自动开火 · 击落敌机", width / 2f, height - dp(24).toFloat(), hintPaint)
+        canvas.drawText("拖动飞机自动开火 · 击落敌机", width / 2f, height - dp(66).toFloat(), hintPaint)
     }
 
     override fun reset() {
@@ -150,6 +150,10 @@ class PlaneView(context: Context) : GameView(context) {
         score = 0
         lives = 3
         over = false
+        // 复位飞机位置：否则"重开/再来一局"后飞机停在上一局结束的位置
+        // （撞机时通常贴着屏幕边缘），开局就在角落里很别扭。
+        planeX = width / 2f
+        planeY = height * 0.8f
         setScore(0)
         start()
     }

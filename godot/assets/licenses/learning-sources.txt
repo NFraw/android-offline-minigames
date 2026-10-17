@@ -1,0 +1,56 @@
+Offline learning resources, v3.7.0, 2026-10-16
+
+Poetry: classical public-domain works, selected from chinese-poetry / qianjiashi.json.
+https://github.com/chinese-poetry/chinese-poetry
+Source dataset MIT; traditional characters converted to simplified for game content; deduplicated by first line. Retained original 24 learning pairs take priority.
+Pinyin: mozillazg/pinyin-data, MIT, https://github.com/mozillazg/pinyin-data
+Selected common single-reading characters; tones retained in explanations; umlaut spelling restored after j/q/x. Multireading bare characters excluded.
+English vocabulary: project-authored bilingual list of 320 concrete concepts. Pictures generated with OpenAI built-in imagegen, 5 atlases, exact indices in tools/learning-sources/english-visual-concepts.json.
+Piano: piano/C4.wav,D4.wav,E4.wav,F4.wav,G4.wav,A4.wav,B4.wav from Nicholas Brosowsky's tonejs-instruments sample collection (piano source identified as VSO2 by sample-source-info.txt).
+https://github.com/nbrosowsky/tonejs-instruments
+Samples licensed CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
+Modified for this project: mono mix, resampled to 44.1kHz PCM16, normalized, trimmed to 0.9 seconds with 0.22-second fade-out. Original source recordings retained under tools/learning-sources.
+Generated curling and Chinese chess piece atlases: OpenAI built-in imagegen, project prompts retained in docs/development/题库与美术扩充.md. No gameplay network access is required.
+The MIT License (MIT)
+
+Copyright (c) 2016 JackeyGao
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+The MIT License (MIT)
+
+Copyright (c) 2016 mozillazg
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

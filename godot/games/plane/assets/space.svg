@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
+<defs>
+<linearGradient id="space" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#102339"/><stop offset=".5" stop-color="#081425"/><stop offset="1" stop-color="#0b142a"/></linearGradient>
+<radialGradient id="cloud"><stop stop-color="#245865" stop-opacity=".5"/><stop offset="1" stop-color="#173349" stop-opacity="0"/></radialGradient>
+<radialGradient id="planet" cx=".28" cy=".25"><stop stop-color="#254454"/><stop offset=".6" stop-color="#142c43"/><stop offset="1" stop-color="#0a172b"/></radialGradient>
+<linearGradient id="orbit"><stop stop-color="#69bbbf" stop-opacity="0"/><stop offset=".5" stop-color="#69bbbf" stop-opacity=".15"/><stop offset="1" stop-color="#69bbbf" stop-opacity="0"/></linearGradient>
+</defs>
+<path fill="url(#space)" d="M0 0h720v1280H0z"/>
+<ellipse cx="670" cy="400" rx="510" ry="720" fill="url(#cloud)" transform="rotate(24 670 400)"/>
+<circle cx="595" cy="285" r="163" fill="url(#planet)" stroke="#366573" stroke-opacity=".18"/>
+<ellipse cx="595" cy="285" rx="250" ry="48" fill="none" stroke="url(#orbit)" stroke-width="5" transform="rotate(-26 595 285)"/>
+<path d="m-80 1150 950-500M-50 1200l950-500" stroke="#62acb6" stroke-opacity=".035" stroke-width="70"/>
+</svg>

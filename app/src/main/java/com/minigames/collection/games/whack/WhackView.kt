@@ -66,9 +66,14 @@ class WhackView(context: Context) : GameView(context) {
     }
 
     override fun onTouch(event: MotionEvent) {
-        if (event.action != MotionEvent.ACTION_DOWN || paused) return
-        val x = event.x
-        val y = event.y
+        // 同时接受 POINTER_DOWN：打地鼠是"快速连点"玩法，若先按住一根手指再换另一根敲，
+        // 第二根手指产生的是 ACTION_POINTER_DOWN，旧实现只认 ACTION_DOWN 会漏记。
+        if (event.actionMasked != MotionEvent.ACTION_DOWN &&
+            event.actionMasked != MotionEvent.ACTION_POINTER_DOWN) return
+        if (paused) return
+        val idx = event.actionIndex
+        val x = event.getX(idx)
+        val y = event.getY(idx)
         if (!started) {
             if (startBtn.contains(x, y)) {
                 started = true

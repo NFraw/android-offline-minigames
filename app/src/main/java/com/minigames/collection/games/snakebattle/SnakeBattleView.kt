@@ -37,6 +37,14 @@ class SnakeBattleView(context: Context) : GameView(context) {
     private var started2 = false
     private var acc = 0f
     private var speed = 5.5f
+    /** 滑动转向阈值（像素，按屏幕密度换算，避免不同机型手感差异过大）。 */
+    private var swipeSlap = 44f
+    /**
+     * 残局倒计时：只剩一条蛇存活、而它还没开始移动（玩家一直没碰屏幕）时启动。
+     * 没有这个兜底的话，另一方按兵不动比赛就永远不会结束，只能靠悬浮层重开/退出。
+     * -1 表示未启动。
+     */
+    private var endTimer = -1f
 
     private var cols = 16
     private var rows = 24
@@ -92,6 +100,7 @@ class SnakeBattleView(context: Context) : GameView(context) {
     }
 
     override fun onLayout(w: Int, h: Int) {
+        swipeSlap = dp(16).toFloat()
         val padH = dp(156)
         val availH = h - padH * 2
         cell = min(w / 16f, availH / 24f)
@@ -119,28 +128,27 @@ class SnakeBattleView(context: Context) : GameView(context) {
     }
 
     override fun onTouch(event: MotionEvent) {
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-            for (b in pad1) {
-                if (b.rect.contains(event.x, event.y)) {
-                    setDir(0, b.dx, b.dy)
-                    playSound(SoundManager.MOVE)
-                    return
-                }
-            }
-            for (b in pad2) {
-                if (b.rect.contains(event.x, event.y)) {
-                    setDir(1, b.dx, b.dy)
-                    playSound(SoundManager.MOVE)
-                    return
-                }
-            }
-        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val idx = event.actionIndex
-                val id = event.getPointerId(idx)
                 val x = event.getX(idx)
                 val y = event.getY(idx)
+                // 每一根按下的手指都检查方向键（支持多位玩家多指同时按键）
+                for (b in pad1) {
+                    if (b.rect.contains(x, y)) {
+                        setDir(0, b.dx, b.dy)
+                        playSound(SoundManager.MOVE)
+                        return
+                    }
+                }
+                for (b in pad2) {
+                    if (b.rect.contains(x, y)) {
+                        setDir(1, b.dx, b.dy)
+                        playSound(SoundManager.MOVE)
+                        return
+                    }
+                }
+                val id = event.getPointerId(idx)
                 val zone = if (y < height / 2f) 0 else 1
                 // 同半屏已有手指则替换（后按下的生效）
                 val old = touchState.entries.firstOrNull { it.value[0] == zone.toFloat() }?.key
@@ -155,7 +163,9 @@ class SnakeBattleView(context: Context) : GameView(context) {
                     val y = event.getY(i)
                     val dx = x - st[1]
                     val dy = y - st[2]
-                    if (Math.abs(dx) > 44 || Math.abs(dy) > 44) {
+                    // 阈值必须按密度换算：写死 44 像素在 3x 屏上只有约 15dp，轻碰即转向；
+                    // 低密度屏上又要大幅拖拽，同一手势在不同机型手感差异极大。
+                    if (Math.abs(dx) > swipeSlap || Math.abs(dy) > swipeSlap) {
                         if (Math.abs(dx) > Math.abs(dy)) {
                             setDir(st[0].toInt(), if (dx > 0) 1 else -1, 0)
                         } else {
@@ -196,6 +206,18 @@ class SnakeBattleView(context: Context) : GameView(context) {
 
     override fun update(dt: Float) {
         if (over) return
+        // 残局兜底：只剩一条蛇且它尚未开始移动 → 给 8 秒倒计时，超时直接按长度结算
+        if (alive1 != alive2) {
+            val survivorStarted = if (alive1) started1 else started2
+            if (!survivorStarted) {
+                if (endTimer < 0f) endTimer = 8f
+                endTimer -= dt
+                if (endTimer <= 0f) {
+                    finishMatch()
+                    return
+                }
+            }
+        }
         acc += dt * speed
         while (acc >= 1f) {
             acc -= 1f
@@ -261,18 +283,22 @@ class SnakeBattleView(context: Context) : GameView(context) {
             }
         }
         // 一条蛇死后另一条继续玩，两条都死后按身体长度（分数）结算
-        if (!alive1 && !alive2) {
-            over = true
-            playSound(SoundManager.WIN)
-            val s1 = body1.size
-            val s2 = body2.size
-            val summary = when {
-                s1 > s2 -> "玩家 1 获胜！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
-                s2 > s1 -> "玩家 2 获胜！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
-                else -> "平局！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
-            }
-            gameOver(GameResult(0, s1 != s2, summary))
+        if (!alive1 && !alive2) finishMatch()
+    }
+
+    /** 比赛结算：按身体长度（节数）比较胜负。 */
+    private fun finishMatch() {
+        if (over) return
+        over = true
+        playSound(SoundManager.WIN)
+        val s1 = body1.size
+        val s2 = body2.size
+        val summary = when {
+            s1 > s2 -> "玩家 1 获胜！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
+            s2 > s1 -> "玩家 2 获胜！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
+            else -> "平局！玩家1 " + s1 + " 节 vs 玩家2 " + s2 + " 节"
         }
+        gameOver(GameResult(0, s1 != s2, summary))
     }
 
     private fun drawSnake(canvas: Canvas, body: ArrayDeque<Pt>, head: Paint, tail: Paint) {
@@ -340,12 +366,16 @@ class SnakeBattleView(context: Context) : GameView(context) {
         body2.clear()
         foods.clear()
         val cy = rows / 2
-        body1.addFirst(Pt(cols / 4, cy))
-        body1.addLast(Pt(cols / 4 - 1, cy))
-        body1.addLast(Pt(cols / 4 - 2, cy))
-        body2.addFirst(Pt(cols * 3 / 4, cy))
-        body2.addLast(Pt(cols * 3 / 4 + 1, cy))
-        body2.addLast(Pt(cols * 3 / 4 + 2, cy))
+        // 两条蛇初始放在不同行：旧实现都放在 cy 且相向而行，双方同时按"前进"键
+        // 4 拍后就会头撞头双双暴毙（还判平局），是极易复现的开局事故。
+        val cy1 = (cy - 2).coerceIn(0, rows - 1)
+        val cy2 = (cy + 2).coerceIn(0, rows - 1)
+        body1.addFirst(Pt(cols / 4, cy1))
+        body1.addLast(Pt(cols / 4 - 1, cy1))
+        body1.addLast(Pt(cols / 4 - 2, cy1))
+        body2.addFirst(Pt(cols * 3 / 4, cy2))
+        body2.addLast(Pt(cols * 3 / 4 + 1, cy2))
+        body2.addLast(Pt(cols * 3 / 4 + 2, cy2))
         dir1x = 1; dir1y = 0
         dir2x = -1; dir2y = 0
         nd1x = 1; nd1y = 0
@@ -357,6 +387,7 @@ class SnakeBattleView(context: Context) : GameView(context) {
         started2 = false
         acc = 0f
         speed = 5.5f
+        endTimer = -1f
         repeat(3) { spawnFood() }
         start()
     }

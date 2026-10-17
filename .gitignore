@@ -16,3 +16,19 @@ release.keystore
 # 本地构建缓存与截图
 .gradle-home/
 截图/
+
+# 新版引擎本地环境与生成产物
+dev.local.json
+godot/.godot/
+godot/android/
+godot/export_credentials.cfg
+artifacts/
+
+# 本机诊断和发布文件，APK 通过 GitHub Release 分发。
+/.acl-recovery/
+/.workbuddy-ai/
+/releases/
+/*.log
+/*.png
+**/__pycache__/
+

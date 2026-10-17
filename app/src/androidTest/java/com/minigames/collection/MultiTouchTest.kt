@@ -1,12 +1,13 @@
 package com.minigames.collection
 
-import android.content.Intent
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
-import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.minigames.collection.TestGames.boolVal
+import com.minigames.collection.TestGames.floatVal
+import com.minigames.collection.TestGames.intVal
+import com.minigames.collection.TestGames.withGame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,160 +16,143 @@ import org.junit.runner.RunWith
 /**
  * 多点触控专项测试：向双人游戏注入双指事件，验证两名玩家可同时独立操作。
  * 直接在游戏 View 上 dispatchTouchEvent，逻辑等价于真实多点输入。
+ *
+ * 座位约定：玩家 1 在下半屏、玩家 2 在上半屏（与全库一致）。
  */
 @RunWith(AndroidJUnit4::class)
 class MultiTouchTest {
 
-    private fun findView(root: View, className: String): View? {
-        if (root.javaClass.simpleName == className) return root
-        if (root is ViewGroup) {
-            for (i in 0 until root.childCount) {
-                val found = findView(root.getChildAt(i), className)
-                if (found != null) return found
-            }
-        }
-        return null
-    }
+    private var downTime = 1000L
 
-    private fun readFloat(obj: Any, field: String): Float {
-        val f = obj.javaClass.getDeclaredField(field)
-        f.isAccessible = true
-        return f.getFloat(obj)
-    }
-
-    private fun readInt(obj: Any, field: String): Int {
-        val f = obj.javaClass.getDeclaredField(field)
-        f.isAccessible = true
-        return f.getInt(obj)
-    }
-
-    private fun launch(gameId: String): ActivityScenario<GameActivity> =
-        ActivityScenario.launch(Intent(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext, GameActivity::class.java).putExtra("game", gameId))
-
-    private fun pointerDown(downTime: Long, eventTime: Long, x: Float, y: Float, pointerId: Int, count: Int): MotionEvent {
-        val props = arrayOfNulls<MotionEvent.PointerProperties>(count)
-        val coords = arrayOfNulls<MotionEvent.PointerCoords>(count)
-        for (i in 0 until count) {
-            props[i] = MotionEvent.PointerProperties().apply {
+    private fun props(count: Int, vararg pts: Pair<Float, Float>) =
+        Array(count) { i ->
+            MotionEvent.PointerProperties().apply {
                 id = i
                 toolType = MotionEvent.TOOL_TYPE_FINGER
             }
-            coords[i] = MotionEvent.PointerCoords().apply {
-                this.x = 0f
-                this.y = 0f
-                pressure = 1f
-                size = 1f
-            }
-        }
-        coords[pointerId]!!.x = x
-        coords[pointerId]!!.y = y
-        val action = if (pointerId == 0) {
-            MotionEvent.ACTION_DOWN
-        } else {
-            MotionEvent.ACTION_POINTER_DOWN or (pointerId shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
-        }
-        return MotionEvent.obtain(downTime, eventTime, action, count, props, coords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
-    }
-
-    private fun pointerMove(eventTime: Long, vararg pts: Pair<Float, Float>): MotionEvent {
-        val count = pts.size
-        val props = arrayOfNulls<MotionEvent.PointerProperties>(count)
-        val coords = arrayOfNulls<MotionEvent.PointerCoords>(count)
-        for (i in 0 until count) {
-            props[i] = MotionEvent.PointerProperties().apply {
-                id = i
-                toolType = MotionEvent.TOOL_TYPE_FINGER
-            }
-            coords[i] = MotionEvent.PointerCoords().apply {
+        } to Array(count) { i ->
+            MotionEvent.PointerCoords().apply {
                 x = pts[i].first
                 y = pts[i].second
                 pressure = 1f
                 size = 1f
             }
         }
-        return MotionEvent.obtain(0L, eventTime, MotionEvent.ACTION_MOVE, count, props, coords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
+
+    private fun event(action: Int, count: Int, pts: Array<out Pair<Float, Float>>, time: Long): MotionEvent {
+        val (p, c) = props(count, *pts)
+        return MotionEvent.obtain(downTime, time, action, count, p, c,
+            0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
     }
 
-    private fun pointerUp(downTime: Long, eventTime: Long, pointerId: Int, count: Int): MotionEvent =
-        MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP, 0f, 0f, 0)
+    /** 按下第 [id] 根手指（id=0 为 ACTION_DOWN，其余为 ACTION_POINTER_DOWN）。 */
+    private fun down(id: Int, count: Int, vararg pts: Pair<Float, Float>): MotionEvent {
+        val action = if (id == 0) MotionEvent.ACTION_DOWN
+        else MotionEvent.ACTION_POINTER_DOWN or (id shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
+        return event(action, count, pts, downTime + id * 16L)
+    }
 
-    /** 乒乓：双指各自拖动上下半屏的球拍。 */
+    /** 抬起第 [id] 根手指。 */
+    private fun up(id: Int, count: Int, vararg pts: Pair<Float, Float>): MotionEvent {
+        val action = if (id == 0) MotionEvent.ACTION_UP
+        else MotionEvent.ACTION_POINTER_UP or (id shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
+        return event(action, count, pts, downTime + 200L + id * 16L)
+    }
+
+    private fun move(time: Long, vararg pts: Pair<Float, Float>) =
+        event(MotionEvent.ACTION_MOVE, pts.size, pts, time)
+
+    private fun dispatch(view: View, ev: MotionEvent) {
+        try {
+            view.dispatchTouchEvent(ev)
+        } finally {
+            ev.recycle()
+        }
+    }
+
+    /** 乒乓：双指各自拖动上下半屏的球拍（上半屏 = 玩家 2，下半屏 = 玩家 1）。 */
     @Test
     fun pongTwoFingersMoveBothPaddles() {
-        launch("pong").use { scenario ->
-            scenario.onActivity { activity ->
-                val view = findView(activity.window.decorView, "PongView")!!
-                assertTrue("PongView not found", view != null)
-                val p1 = readFloat(view, "p1y")
-                val p2 = readFloat(view, "p2y")
-                val t0 = System.nanoTime() / 1000000
-                // 玩家1 手指按下上半屏
-                view.dispatchTouchEvent(pointerDown(t0, t0 + 16, 200f, 300f, 0, 1))
-                // 玩家2 手指按下下半屏（POINTER_DOWN）
-                view.dispatchTouchEvent(pointerDown(t0, t0 + 32, 800f, 2000f, 1, 2))
-                // 各自移动
-                view.dispatchTouchEvent(pointerMove(t0 + 48, 600f to 300f, 300f to 2000f))
-                // 玩家1 继续移
-                view.dispatchTouchEvent(pointerMove(t0 + 64, 900f to 300f, 300f to 2000f))
-                view.dispatchTouchEvent(pointerUp(t0, t0 + 80, 0, 1))
-                view.dispatchTouchEvent(pointerUp(t0, t0 + 96, 1, 1))
-                val p1After = readFloat(view, "p1y")
-                val p2After = readFloat(view, "p2y")
-                assertTrue("玩家1 球拍未跟随移动: $p1 -> $p1After", Math.abs(p1After - p1) > 100f)
-                assertTrue("玩家2 球拍未跟随移动: $p2 -> $p2After", Math.abs(p2After - p2) > 100f)
-                assertTrue("玩家1 应移到 900 附近: $p1After", Math.abs(p1After - 900f) < 30f)
-                assertTrue("玩家2 应移到 300 附近: $p2After", Math.abs(p2After - 300f) < 30f)
-            }
+        withGame("pong") { view ->
+            downTime = 1000L
+            val p1 = floatVal(view, "p1y")
+            val p2 = floatVal(view, "p2y")
+
+            dispatch(view, down(0, 1, 200f to 300f))                              // 上半屏 → 玩家 2
+            dispatch(view, down(1, 2, 200f to 300f, 800f to 2000f))                // 下半屏 → 玩家 1
+            dispatch(view, move(1100L, 600f to 300f, 300f to 2000f))
+            dispatch(view, move(1200L, 900f to 300f, 300f to 2000f))
+
+            val p1After = floatVal(view, "p1y")
+            val p2After = floatVal(view, "p2y")
+            assertTrue("玩家2（上）球拍未跟随移动: $p2 -> $p2After", Math.abs(p2After - p2) > 100f)
+            assertTrue("玩家1（下）球拍未跟随移动: $p1 -> $p1After", Math.abs(p1After - p1) > 100f)
+            assertTrue("玩家2 球拍应移到 900 附近: $p2After", Math.abs(p2After - 900f) < 30f)
+            assertTrue("玩家1 球拍应移到 300 附近: $p1After", Math.abs(p1After - 300f) < 30f)
+        }
+    }
+
+    /** 乒乓：同一半屏多按一根手指再抬起，不应把已有球拍"锁死"。 */
+    @Test
+    fun pongExtraFingerDoesNotLockPaddle() {
+        withGame("pong") { view ->
+            downTime = 2000L
+            dispatch(view, down(0, 1, 200f to 2000f))                       // 玩家 1 按住下半屏
+            dispatch(view, down(1, 2, 200f to 2000f, 400f to 2100f))        // 同半屏又落一根手指
+            dispatch(view, up(1, 2, 200f to 2000f, 400f to 2100f))          // 抬起第二根
+            dispatch(view, move(2300L, 950f to 2000f))                      // 第一根继续拖动
+            val p1 = floatVal(view, "p1y")
+            assertTrue("抬起多余手指后球拍被锁死: $p1", Math.abs(p1 - 950f) < 30f)
         }
     }
 
     /** 贪吃蛇对战（上下分屏）：双指各自滑动启动两条蛇。 */
     @Test
     fun snakeBattleTwoFingersStartBothSnakes() {
-        launch("snakebattle").use { scenario ->
-            scenario.onActivity { activity ->
-                val view = findView(activity.window.decorView, "SnakeBattleView")!!
-                assertTrue("SnakeBattleView not found", view != null)
-                val t0 = System.nanoTime() / 1000000
-                // 玩家1 上半屏滑动（右）
-                view.dispatchTouchEvent(pointerDown(t0, t0 + 16, 200f, 400f, 0, 1))
-                view.dispatchTouchEvent(pointerMove(t0 + 32, 600f to 400f))
-                // 玩家2 下半屏滑动（左）
-                view.dispatchTouchEvent(pointerDown(t0 + 40, t0 + 48, 900f, 1600f, 1, 2))
-                view.dispatchTouchEvent(pointerMove(t0 + 64, 500f to 1600f, 600f to 1600f))
-                view.dispatchTouchEvent(pointerUp(t0, t0 + 80, 0, 1))
-                view.dispatchTouchEvent(pointerUp(t0, t0 + 96, 1, 1))
-                val s1 = readBooleanField(view, "started1")
-                val s2 = readBooleanField(view, "started2")
-                assertTrue("玩家1 蛇未启动", s1)
-                assertTrue("玩家2 蛇未启动", s2)
-            }
+        withGame("snakebattle") { view ->
+            downTime = 3000L
+            dispatch(view, down(0, 1, 200f to 400f))                          // 上半屏（玩家 1）
+            dispatch(view, move(3050L, 700f to 400f))
+            dispatch(view, down(1, 2, 200f to 400f, 900f to 1600f))           // 下半屏（玩家 2）
+            dispatch(view, move(3100L, 700f to 400f, 500f to 1600f))
+
+            assertTrue("玩家1 蛇未启动", boolVal(view, "started1"))
+            assertTrue("玩家2 蛇未启动", boolVal(view, "started2"))
         }
     }
 
-    private fun readBooleanField(obj: Any, field: String): Boolean {
-        val f = obj.javaClass.getDeclaredField(field)
-        f.isAccessible = true
-        return f.getBoolean(obj)
-    }
-
-    /** 反应力对决：双指同时抢拍，只有先处理的一指计分。 */
+    /** 反应力对决：双指同时点击，只有一次计入得分（第二指到来时本轮已结算）。 */
     @Test
     fun reactionBothTapsHandled() {
-        launch("reaction").use { scenario ->
-            scenario.onActivity { activity ->
-                val view = findView(activity.window.decorView, "ReactionView")!!
-                assertTrue("ReactionView not found", view != null)
-                val t0 = System.nanoTime() / 1000000
-                // 启动初期处于等待状态：双指同时点击 → 抢拍判对方得分（s1+s2 == 1）
-                view.dispatchTouchEvent(pointerDown(t0, t0 + 16, 300f, 300f, 0, 1))
-                view.dispatchTouchEvent(pointerDown(t0, t0 + 32, 700f, 2000f, 1, 2))
-                view.dispatchTouchEvent(pointerUp(t0, t0 + 48, 0, 1))
-                view.dispatchTouchEvent(pointerUp(t0, t0 + 64, 1, 1))
-                val s1 = readInt(view, "s1")
-                val s2 = readInt(view, "s2")
-                assertEquals("抢拍应恰好计一分", 1, s1 + s2)
-            }
+        withGame("reaction") { view ->
+            downTime = 4000L
+            dispatch(view, down(0, 1, 300f to 300f))                          // 上半屏 → 玩家 2
+            dispatch(view, down(1, 2, 300f to 300f, 700f to 2000f))           // 下半屏 → 玩家 1
+            val s1 = intVal(view, "s1")
+            val s2 = intVal(view, "s2")
+            assertEquals("等待阶段双指点击应恰好结算一次抢拍", 1, s1 + s2)
+        }
+    }
+
+    /** 抢答算术：两根手指必须都能敲到自己的键盘（第二指为 POINTER_DOWN）。 */
+    @Test
+    fun mathDuelAcceptsSecondFinger() {
+        withGame("math_duel") { view ->
+            downTime = 5000L
+            // phase 0 = 难度选择：点第 1 个模式按钮（左侧按钮中心）
+            dispatch(view, down(0, 1, (TestGames.W * 0.3f) to (TestGames.H * 0.34f + 90f)))
+            assertEquals("未进入对战阶段", 1, intVal(view, "phase"))
+
+            // 第一根手指停在两块键盘之间的空白带（不触发任何按键），第二根手指去点玩家 2 的「1」键。
+            // 第二根手指产生的是 ACTION_POINTER_DOWN —— 旧实现只认 ACTION_DOWN，会把它整段丢弃。
+            downTime = 6000L
+            val neutralY = TestGames.H / 2f + 10f
+            val p2Key1X = 154f
+            val p2Key1Y = TestGames.H / 2f + 420f
+            dispatch(view, down(0, 1, 540f to neutralY))
+            dispatch(view, down(1, 2, 540f to neutralY, p2Key1X to p2Key1Y))
+
+            assertEquals("第二根手指的按键被丢弃", "1", TestGames.anyVal<String>(view, "input2"))
         }
     }
 }

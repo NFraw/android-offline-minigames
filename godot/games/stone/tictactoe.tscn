@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://games/stone/stone_view.gd" id="1"]
+
+[node name="StoneGame" type="Node2D"]
+script = ExtResource("1")
+game_id = "tictactoe"

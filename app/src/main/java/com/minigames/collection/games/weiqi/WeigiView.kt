@@ -5,6 +5,8 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.view.MotionEvent
+import com.minigames.collection.common.BoardArt
+import com.minigames.collection.common.BoardArt.Palette
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
@@ -14,6 +16,10 @@ import kotlin.math.min
  * 围棋（15×15 简易规则）：
  * 落子提子、禁自杀；双方连续虚手（点击「虚手」按钮）后终局，
  * 按棋子数 + 围空判定胜负（不实现打劫与贴目）。
+ *
+ * 【美术说明】棋盘改用 BoardArt 统一木质圆角底盘（与五子棋/象棋/黑白棋同源），
+ * 网格线改为半透明圆头细线，星位为柔和暖棕圆点，棋子改用哑光玻璃质感
+ * （左上柔光高光 + 向下软投影），虚手按钮与状态提示分别收敛为柔和按钮与居中文字。
  */
 class WeigiView(context: Context) : GameView(context) {
 
@@ -31,6 +37,10 @@ class WeigiView(context: Context) : GameView(context) {
     private var over = false
     private var capturedW = 0
     private var capturedB = 0
+    /** 上一手落子之前的局面快照（打劫/禁全同判定用），首手为空。 */
+    private var prevState: IntArray? = null
+    /** 上一次落子失败是否因为打劫（用于给玩家不同的提示文案）。 */
+    private var koBlocked = false
 
     private var cell = 0f
     private var boardLeft = 0f
@@ -38,45 +48,54 @@ class WeigiView(context: Context) : GameView(context) {
     private var stoneR = 0f
     private val passBtn = RectF()
 
-    private val boardPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE0B577.toInt() }
-    private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF8A5A2B.toInt()
-        strokeWidth = 2f
-    }
-    private val blackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1C2333.toInt() }
-    private val blackHiPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF4A5568.toInt() }
-    private val whitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF5F6FA.toInt() }
-    private val whiteBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFB9C0CE.toInt()
-        style = Paint.Style.STROKE
-        strokeWidth = 2f
-    }
-    private val markPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE8503A.toInt() }
-    private val turnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        textSize = 44f
-    }
-    private val btnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF2A3557.toInt() }
-    private val btnTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        textSize = 41f
-        color = 0xFFE8EAF0.toInt()
-    }
-    private val infoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        textSize = 37f
-        color = 0xFF8A93A6.toInt()
-    }
+    /** 美术工具箱：统一木板 / 玻璃棋子 / 胶囊 / 柔和按钮。 */
+    private val art = BoardArt(this)
+    /** 棋盘木板矩形（含内边距），onLayout 中计算。 */
+    private val slabRect = RectF()
+    /** 顶部回合状态胶囊矩形。 */
+    private val statusRect = RectF()
+    /** 棋盘尺寸变化时重建木纹渐变（onLayout 可能被多次调用，避免每帧 new Shader）。 */
+    private var lastBoardSide = 0f
+
+    /** 背景色（与全库统一背景一致）。 */
+    private val bgPaint = Paint().apply { color = Palette.BG }
 
     override fun onLayout(w: Int, h: Int) {
-        val side = min(w * 0.96f, h * 0.7f)
+        // 顶部让出悬浮控件安全区（退出/暂停/重开/帮助按钮），底部给「虚手」按钮与提示文字留位置
+        val topPad = dp(SAFE_TOP_DP).toFloat()
+        val bottomPad = dp(112).toFloat()
+        val statusH = dp(38).toFloat()
+        // 头部占用：安全区 + 回合胶囊 + 提子信息行。
+        // 提子信息原来画在 statusRect.bottom + 20dp，正好落在木板顶边上、压住棋盘边框，
+        // 这里显式给它留出一条 band，棋盘从 band 之下开始画。
+        val headerBottom = topPad + dp(4).toFloat() + statusH + dp(24).toFloat()
+        val side = min(w * 0.94f, h - headerBottom - bottomPad).coerceAtLeast(dp(120).toFloat())
         cell = side / (N - 1)
         stoneR = cell * 0.44f
         boardLeft = (w - cell * (N - 1)) / 2f
-        boardTop = (h - cell * (N - 1)) / 2f + cell * 0.9f
-        val bw = cell * 4.2f
-        val bh = dp(52).toFloat()
-        passBtn.set(w / 2f - bw / 2f, boardTop + cell * (N - 1) + cell * 0.9f - bh / 2f, w / 2f + bw / 2f, boardTop + cell * (N - 1) + cell * 0.9f + bh / 2f)
+        // 棋盘紧贴头部信息之下（余量留在底部，避免棋盘沉到屏幕下半部）
+        boardTop = headerBottom + dp(16).toFloat() + cell * 0.5f
+
+        // 木板比网格线各外扩半格，保证边缘交叉点不贴边
+        slabRect.set(
+            boardLeft - cell * 0.62f, boardTop - cell * 0.62f,
+            boardLeft + cell * (N - 1) + cell * 0.62f, boardTop + cell * (N - 1) + cell * 0.62f)
+        if (side != lastBoardSide) {
+            lastBoardSide = side
+            art.buildWoodSlab(slabRect)
+        }
+
+        // 顶部回合状态胶囊（放在安全区之下）
+        val bw = min(w * 0.72f, dp(300).toFloat())
+        val by = topPad + dp(4).toFloat()
+        statusRect.set(w / 2f - bw / 2f, by, w / 2f + bw / 2f, by + statusH)
+
+        // 「虚手」按钮：棋盘之下，底部提示文字之上
+        val pw = min(cell * 4.4f, w * 0.6f)
+        val ph = dp(46).toFloat()
+        val py = slabRect.bottom + dp(12).toFloat()
+        passBtn.set(w / 2f - pw / 2f, py, w / 2f + pw / 2f, py + ph)
+
         reset()
     }
 
@@ -119,10 +138,12 @@ class WeigiView(context: Context) : GameView(context) {
         return false
     }
 
-    /** 落子并处理提子；自杀禁着返回 false。 */
+    /** 落子并处理提子；自杀禁着或打劫违规返回 false。 */
     private fun place(x: Int, y: Int): Boolean {
         val idx = y * N + x
         if (board[idx] != EMPTY) return false
+        // 保存落子前的局面，用于打劫（禁全同）判定
+        val before = board.copyOf()
         val opp = if (curPlayer == BLACK) WHITE else BLACK
         board[idx] = curPlayer
         var captured = 0
@@ -139,6 +160,15 @@ class WeigiView(context: Context) : GameView(context) {
             board[idx] = EMPTY
             return false
         }
+        // 打劫（禁全同）：落子后的局面不能与"上一手之前的局面"完全相同。
+        // 典型场景是白提一子后黑立即回提——旧实现没有这条判定，双方可以无限循环互提，
+        // 劫争完全失效并直接影响终局目数。
+        if (prevState != null && board.contentEquals(prevState!!)) {
+            board[idx] = EMPTY
+            koBlocked = true
+            return false
+        }
+        prevState = before
         if (curPlayer == BLACK) capturedW += captured else capturedB += captured
         lastMove = idx
         passCount = 0
@@ -201,6 +231,7 @@ class WeigiView(context: Context) : GameView(context) {
         val y = event.y
         if (passBtn.contains(x, y)) {
             passCount++
+            prevState = null  // 虚手解消劫争限制（标准规则）
             playSound(SoundManager.MOVE)
             if (passCount >= 2) {
                 finish()
@@ -216,53 +247,60 @@ class WeigiView(context: Context) : GameView(context) {
         if (d > cell * 0.45) return
         if (place(c, r)) {
             curPlayer = if (curPlayer == BLACK) WHITE else BLACK
+            koBlocked = false
         } else {
             playSound(SoundManager.LOSE)
+            if (koBlocked) {
+                android.widget.Toast.makeText(context, "打劫：不能立即提回，请先在别处找劫材",
+                    android.widget.Toast.LENGTH_SHORT).show()
+                koBlocked = false
+            }
         }
     }
 
     override fun update(dt: Float) {}
 
     override fun drawGame(canvas: Canvas) {
-        canvas.drawColor(0xFF141A2E.toInt())
-        val left = boardLeft - cell * 0.5f
-        val top = boardTop - cell * 0.5f
-        val right = boardLeft + (N - 1) * cell + cell * 0.5f
-        val bottom = boardTop + (N - 1) * cell + cell * 0.5f
-        canvas.drawRoundRect(RectF(left, top, right, bottom), cell * 0.4f, cell * 0.4f, boardPaint)
+        canvas.drawRect(gameRect, bgPaint)
+        // 木质圆角底盘（统一美术）
+        art.drawWoodSlab(canvas, slabRect, 20f)
+        // 网格线：细、半透明、圆头
         for (i in 0 until N) {
-            canvas.drawLine(boardLeft, boardTop + i * cell, boardLeft + (N - 1) * cell, boardTop + i * cell, linePaint)
-            canvas.drawLine(boardLeft + i * cell, boardTop, boardLeft + i * cell, boardTop + (N - 1) * cell, linePaint)
+            art.drawGridLine(canvas, boardLeft, boardTop + i * cell, boardLeft + (N - 1) * cell, boardTop + i * cell, 1.2f)
+            art.drawGridLine(canvas, boardLeft + i * cell, boardTop, boardLeft + i * cell, boardTop + (N - 1) * cell, 1.2f)
         }
-        // 星位
+        // 星位（15 路盘的九个传统星位）
         for (sx in intArrayOf(3, 7, 11)) for (sy in intArrayOf(3, 7, 11)) {
-            canvas.drawCircle(boardLeft + sx * cell, boardTop + sy * cell, cell * 0.09f, linePaint)
+            art.drawStar(canvas, boardLeft + sx * cell, boardTop + sy * cell, cell * 0.09f)
         }
-        // 棋子
+        // 棋子：哑光玻璃质感，最后一手用柔和标记点
         for (r in 0 until N) for (c in 0 until N) {
             val v = board[r * N + c]
             if (v == EMPTY) continue
-            val cx = boardLeft + c * cell
-            val cy = boardTop + r * cell
-            if (v == BLACK) {
-                canvas.drawCircle(cx, cy, stoneR, blackHiPaint)
-                canvas.drawCircle(cx, cy, stoneR * 0.86f, blackPaint)
-            } else {
-                canvas.drawCircle(cx, cy, stoneR, whiteBorderPaint)
-                canvas.drawCircle(cx, cy, stoneR * 0.95f, whitePaint)
-            }
+            art.drawGlassStone(
+                canvas, boardLeft + c * cell, boardTop + r * cell, stoneR,
+                dark = v == BLACK, lastMark = (r * N + c) == lastMove)
         }
-        if (lastMove >= 0) {
-            canvas.drawCircle(boardLeft + (lastMove % N) * cell, boardTop + (lastMove / N) * cell, cell * 0.12f, markPaint)
-        }
-        // 回合 + 提子信息
-        turnPaint.color = if (curPlayer == BLACK) 0xFFE8EAF0.toInt() else 0xFFB9C0CE.toInt()
-        val name = if (curPlayer == BLACK) "● 黑方落子" else "○ 白方落子"
-        canvas.drawText(name, width / 2f, boardTop - cell * 1.6f, turnPaint)
-        canvas.drawText("提子：黑提 " + capturedW + " · 白提 " + capturedB, width / 2f, boardTop - cell * 0.95f, infoPaint)
-        // 虚手按钮
-        canvas.drawRoundRect(passBtn, dp(14).toFloat(), dp(14).toFloat(), btnPaint)
-        canvas.drawText("虚手", passBtn.centerX(), passBtn.centerY() - (btnTextPaint.descent() + btnTextPaint.ascent()) / 2f, btnTextPaint)
+        // 顶部回合状态胶囊：文字直接写明当前落子方（不再用 ●○ 字形导致黑子隐形）
+        val isBlack = curPlayer == BLACK
+        art.drawStatusBar(
+            canvas, statusRect, (if (isBlack) "黑方落子" else "白方落子"),
+            if (isBlack) Palette.STONE_DARK else Palette.STONE_LIGHT_RIM)
+        // 提子信息：胶囊左侧画一枚真实小棋子，棋子颜色一目了然
+        val infoY = statusRect.bottom + dp(20).toFloat()
+        art.drawGlassStone(canvas, statusRect.left + dp(16).toFloat(), infoY, stoneR * 0.5f, dark = isBlack)
+        art.drawCenterText(
+            canvas, (if (isBlack) "黑方" else "白方") + "提子 黑提 " + capturedW + " · 白提 " + capturedB,
+            statusRect.centerX() + dp(12).toFloat(), infoY, 13f, Palette.DIM)
+        // 「虚手」按钮：标注当前落子方，双方轮流使用
+        art.drawSoftButton(canvas, passBtn, Palette.ACCENT, 14f)
+        art.drawCenterText(
+            canvas, (if (isBlack) "黑方" else "白方") + "虚手",
+            passBtn.centerX(), passBtn.centerY(), 17f, Palette.TEXT_LIGHT)
+        // 底部提示：避开右下角得分胶囊所在的 dp(55..12) 区间
+        art.drawCenterText(
+            canvas, "点击落子 · 虚手跳过 · 双方连续虚手两次后终局",
+            width / 2f, passBtn.bottom + dp(16).toFloat(), 12f, Palette.DIM)
     }
 
     override fun reset() {
@@ -273,6 +311,8 @@ class WeigiView(context: Context) : GameView(context) {
         over = false
         capturedW = 0
         capturedB = 0
+        prevState = null
+        koBlocked = false
         start()
     }
 }

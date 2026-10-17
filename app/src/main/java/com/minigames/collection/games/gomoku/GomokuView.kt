@@ -3,13 +3,22 @@ package com.minigames.collection.games.gomoku
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.RectF
 import android.view.MotionEvent
+import com.minigames.collection.common.BoardArt
+import com.minigames.collection.common.BoardArt.Palette
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
 import kotlin.math.min
 
-/** 五子棋：双人同屏轮流落子，先连成五子者胜。 */
+/**
+ * 五子棋：双人同屏轮流落子，先连成五子者胜。
+ *
+ * 【美术说明】棋盘改用 BoardArt 统一木质圆角底盘（与围棋/象棋/黑白棋同源），
+ * 棋子改用哑光玻璃棋子（带左上高光与软投影），最后一手标记改为柔和金环，
+ * 顶部状态改为胶囊条，视觉不再是一块生硬的纯色木板 + 扁平圆点。
+ */
 class GomokuView(context: Context) : GameView(context) {
 
     companion object {
@@ -49,12 +58,43 @@ class GomokuView(context: Context) : GameView(context) {
         textSize = 48f
     }
 
+    /** 美术工具箱：统一木板 / 玻璃棋子 / 状态胶囊。 */
+    private val art = BoardArt(this)
+    /** 棋盘木板矩形（含内边距），onLayout 中计算。 */
+    private val slabRect = RectF()
+    /** 顶部状态胶囊矩形。 */
+    private val statusRect = RectF()
+    /** 棋盘尺寸变化时重建木纹渐变。 */
+    private var lastBoardSide = 0f
+
     override fun onLayout(w: Int, h: Int) {
-        val side = min(w * 0.96f, h * 0.78f)
+        // 顶部让出悬浮控件安全区，底部给状态胶囊留位置
+        val topPad = dp(SAFE_TOP_DP).toFloat()
+        val statusH = dp(38).toFloat()
+        val headerBottom = topPad + dp(4).toFloat() + statusH
+        // 棋盘是正方形且受屏宽限制（竖屏手机上 w*0.94 通常远小于屏高）。
+        // 让棋盘紧贴顶部状态条之下开始、余量留在底部——若改成在整屏竖直居中，
+        // 棋盘会被推到屏幕下半部，上方出现一大片空白，观感像"浮在半空"。
+        val side = min(w * 0.94f, h - headerBottom - dp(24).toFloat()).coerceAtLeast(dp(120).toFloat())
         cell = side / (N - 1)
-        stoneR = cell * 0.42f
+        stoneR = cell * 0.44f
         boardLeft = (w - cell * (N - 1)) / 2f
-        boardTop = (h - cell * (N - 1)) / 2f + cell * 0.7f
+        boardTop = headerBottom + dp(20).toFloat() + cell * 0.5f
+
+        // 木板比网格线各外扩半格，保证边缘交叉点不贴边
+        slabRect.set(
+            boardLeft - cell * 0.62f, boardTop - cell * 0.62f,
+            boardLeft + cell * (N - 1) + cell * 0.62f, boardTop + cell * (N - 1) + cell * 0.62f)
+        if (side != lastBoardSide) {
+            lastBoardSide = side
+            art.buildWoodSlab(slabRect)
+        }
+
+        // 顶部状态胶囊（放在安全区之下、棋盘之上）
+        val bw = min(w * 0.72f, dp(300).toFloat())
+        val by = topPad + dp(4).toFloat()
+        statusRect.set(w / 2f - bw / 2f, by, w / 2f + bw / 2f, by + statusH)
+
         reset()
     }
 
@@ -110,45 +150,45 @@ class GomokuView(context: Context) : GameView(context) {
     override fun update(dt: Float) {}
 
     override fun drawGame(canvas: Canvas) {
-        canvas.drawColor(0xFF141A2E.toInt())
-        // 棋盘
-        val left = boardLeft - cell * 0.5f
-        val top = boardTop - cell * 0.5f
-        val right = boardLeft + (N - 1) * cell + cell * 0.5f
-        val bottom = boardTop + (N - 1) * cell + cell * 0.5f
-        canvas.drawRoundRect(android.graphics.RectF(left, top, right, bottom), cell * 0.4f, cell * 0.4f, boardPaint)
+        canvas.drawRect(gameRect, boardPaintBg)
+        // 木质圆角底盘（统一美术）
+        art.drawWoodSlab(canvas, slabRect, 20f)
+        // 网格线：细、半透明、圆头
         for (i in 0 until N) {
-            canvas.drawLine(boardLeft, boardTop + i * cell, boardLeft + (N - 1) * cell, boardTop + i * cell, linePaint)
-            canvas.drawLine(boardLeft + i * cell, boardTop, boardLeft + i * cell, boardTop + (N - 1) * cell, linePaint)
+            art.drawGridLine(canvas, boardLeft, boardTop + i * cell, boardLeft + (N - 1) * cell, boardTop + i * cell, 1.2f)
+            art.drawGridLine(canvas, boardLeft + i * cell, boardTop, boardLeft + i * cell, boardTop + (N - 1) * cell, 1.2f)
         }
         // 星位
         val stars = listOf(Pair(3, 3), Pair(11, 3), Pair(3, 11), Pair(11, 11), Pair(7, 7))
         for ((sx, sy) in stars) {
-            canvas.drawCircle(boardLeft + sx * cell, boardTop + sy * cell, cell * 0.1f, linePaint)
+            art.drawStar(canvas, boardLeft + sx * cell, boardTop + sy * cell, cell * 0.09f)
         }
-        // 棋子
+        // 棋子：哑光玻璃质感（与围棋/黑白棋同一套画法）
         for (r in 0 until N) for (c in 0 until N) {
             val v = board[r * N + c]
             if (v == EMPTY) continue
-            val cx = boardLeft + c * cell
-            val cy = boardTop + r * cell
-            if (v == BLACK) {
-                canvas.drawCircle(cx, cy, stoneR, blackHiPaint)
-                canvas.drawCircle(cx, cy, stoneR * 0.85f, blackPaint)
-            } else {
-                canvas.drawCircle(cx, cy, stoneR, whiteBorderPaint)
-                canvas.drawCircle(cx, cy, stoneR * 0.95f, whitePaint)
-            }
+            art.drawGlassStone(canvas, boardLeft + c * cell, boardTop + r * cell, stoneR, dark = v == BLACK)
         }
-        // 最后一手标记
+        // 最后一手：金色圆环标记（比实心红点更精致，且不遮住棋子本身）
         if (lastX >= 0) {
-            canvas.drawCircle(boardLeft + lastX * cell, boardTop + lastY * cell, cell * 0.14f, markPaint)
+            val mx = boardLeft + lastX * cell
+            val my = boardTop + lastY * cell
+            val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Palette.GOLD
+                style = Paint.Style.STROKE
+                strokeWidth = dp(2.5f)
+            }
+            canvas.drawCircle(mx, my, stoneR * 0.46f, ring)
         }
-        // 回合提示
-        turnPaint.color = if (curPlayer == BLACK) 0xFFE8EAF0.toInt() else 0xFFB9C0CE.toInt()
-        val name = if (curPlayer == BLACK) "● 黑方落子" else "○ 白方落子"
-        canvas.drawText(name, width / 2f, boardTop - cell * 1.35f, turnPaint)
+        // 回合状态胶囊
+        val isBlack = curPlayer == BLACK
+        val name = if (isBlack) "黑方落子" else "白方落子"
+        art.drawStatusBar(canvas, statusRect, name,
+            if (isBlack) Palette.STONE_DARK else Palette.STONE_LIGHT_RIM)
     }
+
+    /** 背景色（与全库统一背景一致）。 */
+    private val boardPaintBg = Paint().apply { color = Palette.BG }
 
     override fun reset() {
         for (i in board.indices) board[i] = EMPTY

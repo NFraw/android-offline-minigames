@@ -109,4 +109,105 @@ class XiangqiRulesTest {
         assertTrue((7 * XiangqiRules.COLS + 4) in targets)
         assertFalse("相不能过河", (5 * XiangqiRules.COLS + 2) in targets)
     }
+
+    /**
+     * 复现用户反馈的局面（截图）：中心列自上而下为
+     * 黑將(4,0) / 黑士(4,1) / 黑砲(4,2) / **红炮(4,3)**（已选中）。
+     * 红炮与黑士之间正好隔着黑砲这一枚炮架，应当能吃士。
+     */
+    @Test
+    fun cannonCapturesAdvisorWithEnemyCannonAsScreen() {
+        val b = IntArray(XiangqiRules.COLS * XiangqiRules.ROWS)
+        b[0 * XiangqiRules.COLS + 4] = XiangqiRules.B_KING
+        b[1 * XiangqiRules.COLS + 4] = XiangqiRules.B_ADVISOR
+        b[2 * XiangqiRules.COLS + 4] = XiangqiRules.B_CANNON
+        b[3 * XiangqiRules.COLS + 4] = XiangqiRules.R_CANNON
+        b[9 * XiangqiRules.COLS + 4] = XiangqiRules.R_KING
+        val cannon = 3 * XiangqiRules.COLS + 4
+        val advisor = 1 * XiangqiRules.COLS + 4
+        val targets = XiangqiRules.targets(b, cannon, XiangqiRules.R_CANNON)
+        val desc = targets.joinToString { "(${it % XiangqiRules.COLS},${it / XiangqiRules.COLS})" }
+        assertTrue("红炮应能隔黑砲吃黑士，实际可走: $desc", advisor in targets)
+        assertTrue("吃士应为合法走法，实际可走: $desc", XiangqiRules.isLegalMove(b, cannon, advisor))
+    }
+
+    /**
+     * 红炮在中心列、过河红兵充当炮架，黑方用士挡在将前 —— 红炮应能隔着红兵吃士。
+     * 对应用户描述的「黑方支士/上象挡将之后，红炮吃不到士」。
+     */
+    @Test
+    fun cannonCapturesAdvisorWithOwnPawnAsScreen() {
+        val b = IntArray(XiangqiRules.COLS * XiangqiRules.ROWS)
+        b[0 * XiangqiRules.COLS + 4] = XiangqiRules.B_KING
+        b[1 * XiangqiRules.COLS + 4] = XiangqiRules.B_ADVISOR
+        b[4 * XiangqiRules.COLS + 4] = XiangqiRules.R_PAWN
+        b[7 * XiangqiRules.COLS + 4] = XiangqiRules.R_CANNON
+        b[9 * XiangqiRules.COLS + 4] = XiangqiRules.R_KING
+        val cannon = 7 * XiangqiRules.COLS + 4
+        val advisor = 1 * XiangqiRules.COLS + 4
+        val targets = XiangqiRules.targets(b, cannon, XiangqiRules.R_CANNON)
+        val desc = targets.joinToString { "(${it % XiangqiRules.COLS},${it / XiangqiRules.COLS})" }
+        assertTrue("红炮应能隔红兵吃黑士，实际可走: $desc", advisor in targets)
+        assertTrue("吃士应为合法走法，实际可走: $desc", XiangqiRules.isLegalMove(b, cannon, advisor))
+    }
+
+    /**
+     * 炮不能吃紧邻的棋子（中间没有炮架）—— 这是规则本身的要求，不是 bug。
+     * 用户提到的「吃不到旁边的卒」属于这种情况。
+     */
+    @Test
+    fun cannonCannotCaptureAdjacentPiece() {
+        val b = IntArray(XiangqiRules.COLS * XiangqiRules.ROWS)
+        b[0 * XiangqiRules.COLS + 4] = XiangqiRules.B_KING
+        b[5 * XiangqiRules.COLS + 4] = XiangqiRules.B_PAWN
+        b[6 * XiangqiRules.COLS + 4] = XiangqiRules.R_CANNON
+        b[9 * XiangqiRules.COLS + 4] = XiangqiRules.R_KING
+        val cannon = 6 * XiangqiRules.COLS + 4
+        val adjacent = 5 * XiangqiRules.COLS + 4
+        assertFalse(
+            "炮不能吃紧邻棋子（无炮架）",
+            adjacent in XiangqiRules.targets(b, cannon, XiangqiRules.R_CANNON))
+    }
+
+    /**
+     * 红炮与黑士之间**没有任何棋子**时，黑士不能吃 —— 因为炮吃子必须恰好隔一枚炮架。
+     * 这正是「黑方支士挡将之后，红炮吃不到那个士」的真正原因：
+     * 士虽然和炮在同一条线上，但中间是空的，炮把它当成了"炮架"而不是"目标"。
+     * 本用例锁定这个正确行为（避免以后被误当成缺陷去"修"）。
+     */
+    @Test
+    fun cannonCannotCaptureAdvisorWithNothingBetween() {
+        val b = IntArray(XiangqiRules.COLS * XiangqiRules.ROWS)
+        b[0 * XiangqiRules.COLS + 4] = XiangqiRules.B_KING
+        b[1 * XiangqiRules.COLS + 4] = XiangqiRules.B_ADVISOR
+        // (4,2) 故意留空：炮与士之间没有炮架
+        b[3 * XiangqiRules.COLS + 4] = XiangqiRules.R_CANNON
+        b[9 * XiangqiRules.COLS + 4] = XiangqiRules.R_KING
+        val cannon = 3 * XiangqiRules.COLS + 4
+        val advisor = 1 * XiangqiRules.COLS + 4
+        val targets = XiangqiRules.targets(b, cannon, XiangqiRules.R_CANNON)
+        val desc = targets.joinToString { "(${it % XiangqiRules.COLS},${it / XiangqiRules.COLS})" }
+        // 士被当作炮架，不是目标；炮只能走到它前面的空格 (4,2)
+        assertFalse("无炮架时不能吃士，实际可走: $desc", advisor in targets)
+        assertTrue("炮应能走到士前面的空格 (4,2)，实际可走: $desc", 2 * XiangqiRules.COLS + 4 in targets)
+    }
+
+    /**
+     * 在「无炮架吃不到士」的局面里放一枚任意棋子当炮架，炮立刻就能吃士。
+     * 说明问题只取决于炮架，与士本身无关。
+     */
+    @Test
+    fun cannonCapturesAdvisorOnceScreenIsPresent() {
+        val b = IntArray(XiangqiRules.COLS * XiangqiRules.ROWS)
+        b[0 * XiangqiRules.COLS + 4] = XiangqiRules.B_KING
+        b[1 * XiangqiRules.COLS + 4] = XiangqiRules.B_ADVISOR
+        b[2 * XiangqiRules.COLS + 4] = XiangqiRules.B_CANNON   // 炮架
+        b[3 * XiangqiRules.COLS + 4] = XiangqiRules.R_CANNON
+        b[9 * XiangqiRules.COLS + 4] = XiangqiRules.R_KING
+        val cannon = 3 * XiangqiRules.COLS + 4
+        val advisor = 1 * XiangqiRules.COLS + 4
+        assertTrue(
+            "有炮架时就能吃士",
+            advisor in XiangqiRules.targets(b, cannon, XiangqiRules.R_CANNON))
+    }
 }

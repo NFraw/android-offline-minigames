@@ -30,6 +30,7 @@ class MinesView(context: Context) : GameView(context) {
     private var over = false
     private var time = 0f
     private var revealedCount = 0
+    private var flaggedCount = 0
     private var longPressed = false
 
     private var cell = 0f
@@ -68,20 +69,43 @@ class MinesView(context: Context) : GameView(context) {
     }
 
     override fun onTouch(event: MotionEvent) {
+        // 暂停时拒绝一切操作：帧循环停摆意味着计时也停了（time 只在 update 里累加），
+        // 若此时还能翻格，玩家可以先暂停再慢慢翻完全盘，用时可压到 0 秒、白拿满分。
+        if (paused || over) return
         gesture.onTouchEvent(event)
-        if (event.action == MotionEvent.ACTION_UP) {
-            if (!longPressed) revealAt(event.x, event.y)
-            longPressed = false
+        when (event.actionMasked) {
+            MotionEvent.ACTION_UP -> {
+                if (!longPressed) revealAt(event.x, event.y)
+                longPressed = false
+            }
+            // 手势被系统/父容器取消时必须复位，否则 longPressed 卡在 true，
+            // 之后每次点按都会走"长按过就不翻格"的分支——表现为地图点不动（只能插旗）。
+            MotionEvent.ACTION_CANCEL -> longPressed = false
         }
     }
 
     override fun update(dt: Float) {
-        if (!over) time += dt
+        if (over) return
+        time += dt
+        // 实时刷新得分胶囊（结算分 = 500 - 用时×2），否则整局都显示"得分 0"，
+        // 与结算时给出的分数对不上。
+        val live = max(0, 500 - time.toInt() * 2)
+        if (live != lastShownScore) {
+            lastShownScore = live
+            setScore(live)
+        }
     }
 
+    private var lastShownScore = 0
+
     private fun cellAt(x: Float, y: Float): Int {
-        val c = ((x - boardLeft) / cell).toInt()
-        val r = ((y - boardTop) / cell).toInt()
+        // 注意不能直接对负值 toInt()：Kotlin 向零截断会把棋盘上方/左侧一格内的空白
+        // 解析成第 0 行/列，点在棋盘外也会翻格。先判负再取整。
+        val fx = (x - boardLeft) / cell
+        val fy = (y - boardTop) / cell
+        if (fx < 0f || fy < 0f) return -1
+        val c = fx.toInt()
+        val r = fy.toInt()
         if (r !in 0 until ROWS || c !in 0 until COLS) return -1
         return r * COLS + c
     }
@@ -89,7 +113,10 @@ class MinesView(context: Context) : GameView(context) {
     private fun toggleFlag(x: Float, y: Float) {
         val idx = cellAt(x, y)
         if (idx < 0 || revealed[idx] || over) return
+        // 插旗数量上限 = 雷数，否则"剩余地雷"会显示负数。
+        if (!flagged[idx] && flaggedCount >= MINES) return
         flagged[idx] = !flagged[idx]
+        flaggedCount += if (flagged[idx]) 1 else -1
         playSound(SoundManager.CLICK)
     }
 
@@ -179,7 +206,7 @@ class MinesView(context: Context) : GameView(context) {
                 if (nr in 0 until ROWS && nc in 0 until COLS) reveal(nr * COLS + nc)
             }
         }
-        if (revealedCount == COLS * ROWS - MINES) {
+        if (!over && revealedCount == COLS * ROWS - MINES) {
             over = true
             val s = max(0, 500 - time.toInt() * 2)
             playSound(SoundManager.WIN)
@@ -189,8 +216,7 @@ class MinesView(context: Context) : GameView(context) {
 
     override fun drawGame(canvas: Canvas) {
         canvas.drawRect(gameRect, bgPaint)
-        var flagsLeft = MINES
-        for (i in 0 until COLS * ROWS) if (flagged[i]) flagsLeft--
+        val flagsLeft = MINES - flaggedCount
         canvas.drawText("剩余地雷 " + flagsLeft + " · 用时 " + time.toInt() + "s", width / 2f, boardTop - dp(10).toFloat(), textPaint)
         for (r in 0 until ROWS) for (c in 0 until COLS) {
             val i = r * COLS + c
@@ -229,6 +255,8 @@ class MinesView(context: Context) : GameView(context) {
         over = false
         time = 0f
         revealedCount = 0
+        flaggedCount = 0
+        lastShownScore = 0
         longPressed = false
         setScore(0)
         start()

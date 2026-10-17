@@ -13,7 +13,20 @@ import android.widget.TextView
 import android.widget.Toast
 import com.minigames.collection.common.SettingsStore
 
-/** 设置页：音效/震动开关、清空最高分。 */
+/**
+ * 设置页 Activity。
+ *
+ * 功能：提供音效/震动/语音播报三个开关，以及清空所有最高分按钮。
+ * 布局：纯代码构建的 LinearLayout（顶栏 + 开关行 + 清空按钮 + 版本信息）。
+ *
+ * 被调用位置：
+ *   - MainActivity 右上角设置按钮：startActivity(Intent(this, SettingsActivity::class.java))
+ *
+ * Android 核心概念：
+ *   - Switch 控件：开关按钮，isChecked 属性读写开关状态
+ *   - setOnCheckedChangeListener：开关状态变化的监听器（回调函数）
+ *   - AlertDialog.Builder：构建弹窗（确认清空最高分时使用）
+ */
 class SettingsActivity : Activity() {
 
     private lateinit var settings: SettingsStore
@@ -88,16 +101,29 @@ class SettingsActivity : Activity() {
             setMargins(dp(16), dp(24), dp(16), 0)
         })
 
-        // 版本信息
+        // 版本信息（从 PackageManager 读取，避免手写版本号与 build.gradle.kts 脱节）
         root.addView(TextView(this).apply {
-            text = "迷你游戏合集 v1.6.0 · 纯离线运行 · 无需任何权限"
+            text = "迷你游戏合集 v" + versionName() + " · 纯离线运行 · 无需任何权限"
             textSize = 24f
             gravity = Gravity.CENTER
             setTextColor(0xFF8A93A6.toInt())
-            setPadding(0, dp(28), 0, 0)
+            setPadding(0, dp(28), 0, dp(40))
         })
 
-        setContentView(root)
+        // 外层套 ScrollView：系统字体放大到最大时各行会显著变高，
+        // 不套滚动容器的话「清空所有最高分」按钮和版本信息会被挤出屏幕且无法触达。
+        val scroll = android.widget.ScrollView(this).apply {
+            setBackgroundColor(0xFFF5F6FA.toInt())
+            addView(root)
+        }
+        setContentView(scroll)
+    }
+
+    /** 读取本应用的 versionName（build.gradle.kts 中定义），失败时回退占位符。 */
+    private fun versionName(): String = try {
+        packageManager.getPackageInfo(packageName, 0).versionName ?: "?"
+    } catch (t: Throwable) {
+        "?"
     }
 
     private fun switchRow(

@@ -63,10 +63,17 @@ class TetrisGameView(context: Context) : GameView(context) {
     }
 
     override fun onLayout(w: Int, h: Int) {
-        cell = min(w / (COLS + 6.5f), h / (ROWS + 3.5f))
+        // 布局必须保证"棋盘 + 间隔 + 按钮行"整体放得下。
+        // 旧实现用 h/(ROWS+3.5) 且 boardTop 只按棋盘高度居中，算下来按钮底边会落到
+        // h 的 1.03 倍（横屏更夸张），◀▶↻▼ 有一截被切在屏幕外，点不到。
+        val topPad = dp(SAFE_TOP_DP).toFloat()
+        val bottomPad = dp(16).toFloat()
+        val availH = (h - topPad - bottomPad).coerceAtLeast(dp(160).toFloat())
+        val contentH0 = ROWS + 2.5f   // 棋盘 20 行 + 0.7 格间隔 + 1.8 格按钮
+        cell = min(w / (COLS + 6.5f), availH / contentH0)
         val totalW = (COLS + 6.5f) * cell
         boardLeft = (w - totalW) / 2f
-        boardTop = (h - ROWS * cell) / 2f
+        boardTop = topPad + (availH - contentH0 * cell) / 2f
         val btnSize = cell * 1.8f
         val gap2 = cell * 0.4f
         val rowY = boardTop + ROWS * cell + cell * 0.7f
@@ -96,8 +103,8 @@ class TetrisGameView(context: Context) : GameView(context) {
     }
 
     private fun fallInterval(): Float {
-        val base = 0.9f - lines / 10f * 0.08f
-        return if (base < 0.09f) 0.09f else base
+        // 加速梯度加大：每消除一行下落间隔缩短，封底 0.07s
+        return (0.9f - lines * 0.015f).coerceAtLeast(0.07f)
     }
 
     private fun fits(cells: List<Pair<Int, Int>>, ox: Int, oy: Int): Boolean {
@@ -122,12 +129,34 @@ class TetrisGameView(context: Context) : GameView(context) {
         }
     }
 
+    /**
+     * 顺时针旋转 90°。
+     *
+     * 修复要点：旋转中心必须是形状**自身**包围盒的中心，而不是 4×4 网格的中心。
+     * 旧实现用 (3 - y, x)（等价于绕 (1.5, 1.5) 旋转），而各形状的重心并不在盒心，
+     * 于是每按一次 ↻ 方块都会自己平移：O 形右下各走 1 格、L 形右移 2 格、T 形右移 1.25 格；
+     * 贴墙或贴底时 fits() 失败还会静默无反应（连音效都没有），玩家会以为按钮坏了。
+     * 这里改为绕自身包围盒旋转 + 简单的 wall-kick 尝试。
+     */
     private fun rotate() {
-        val r = curCells.map { Pair(3 - it.second, it.first) }
-        if (fits(r, curX, curY)) {
-            curCells = r.toMutableList()
-            playSound(SoundManager.MOVE)
+        val minX = curCells.minOf { it.first }
+        val minY = curCells.minOf { it.second }
+        val maxY = curCells.maxOf { it.second }
+        // 归一化到包围盒左上角后旋转：(x, y) → (maxY - y, x - minX)
+        val rotated = curCells.map { Pair(maxY - it.second, it.first - minX) }
+        // 旋转后的包围盒左上角落在原点，把锚点补回原来的绝对位置
+        val nx = curX + minX
+        val ny = curY + minY
+        for (kick in intArrayOf(0, 1, -1, 2, -2)) {
+            if (fits(rotated, nx + kick, ny)) {
+                curCells = rotated.toMutableList()
+                curX = nx + kick
+                curY = ny
+                playSound(SoundManager.MOVE)
+                return
+            }
         }
+        playSound(SoundManager.CLICK)  // 确实转不动时也要有反馈，不能静默
     }
 
     private fun moveX(dx: Int) {

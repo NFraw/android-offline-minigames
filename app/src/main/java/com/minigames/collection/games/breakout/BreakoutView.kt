@@ -82,6 +82,12 @@ class BreakoutView(context: Context) : GameView(context) {
             ballY = height - paddleH - ballR
             vy = -abs(vy)
             vx = (ballX - paddleX) / (paddleW / 2f) * speed * 0.65f
+            // 最小水平分量：球正对挡板中心落下时 vx 恰好为 0，之后球心 x 永不变化，
+            // 变成上下竖直往返的自持循环；若剩余砖块都在别的列，游戏既不结束也不掉分，
+            // 只能靠玩家主动挪挡板才能打破（弹一弹有同样的兜底，打砖块漏了）。
+            if (abs(vx) < speed * 0.15f) {
+                vx = if (ballX >= paddleX) speed * 0.15f else -speed * 0.15f
+            }
             playSound(SoundManager.MOVE)
         }
         // 砖块碰撞：圆形球与矩形砖块真实碰撞箱，命中后按接触面反射并扣血量
@@ -120,8 +126,14 @@ class BreakoutView(context: Context) : GameView(context) {
                 val dy = ballY - cy
                 if (dx * dx + dy * dy > ballR * ballR) continue
                 blocks[r * COLS + c]--
-                score += 10
-                setScore(score)
+                // 计分按"击碎"计（血量归零才算一个砖块），与设计文档一致。
+                // 旧实现每次命中就 +10，一块 3 血砖能记 30 分，最高分虚高最多 3 倍。
+                if (blocks[r * COLS + c] <= 0) {
+                    score += 10
+                    setScore(score)
+                } else {
+                    setScore(score)
+                }
                 playSound(SoundManager.EAT)
                 reflect(left, top, right, bottom, dx, dy)
                 return true
@@ -143,7 +155,17 @@ class BreakoutView(context: Context) : GameView(context) {
                 vy = if (ballY < top) -abs(vy) else abs(vy)
                 ballY = if (ballY < top) top - ballR else bottom + ballR
             }
-            else -> if (abs(vx) > abs(vy)) vx = -vx else vy = -vy
+            else -> {
+                // 球心已落入砖块内部（dx、dy 都接近 0）：必须同时把球推出去，
+                // 否则球会嵌在砖块里、之后每帧都满足命中条件，一块 3 血砖一次穿过就连掉多点耐久。
+                if (abs(vx) > abs(vy)) {
+                    vx = -vx
+                    ballX = if (ballX < (left + right) / 2f) left - ballR else right + ballR
+                } else {
+                    vy = -vy
+                    ballY = if (ballY < (top + bottom) / 2f) top - ballR else bottom + ballR
+                }
+            }
         }
     }
 

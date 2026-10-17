@@ -92,7 +92,14 @@ class Game2048View(context: Context) : GameView(context) {
         if (noMoves()) {
             over = true
             playSound(SoundManager.LOSE)
-            gameOver(GameResult(score, won, if (won) "成功合成 2048！" else "没有可移动的格子了"))
+            // won 只表示"本局是否合成过 2048"，不能直接当作胜负：
+            // 合成 2048 之后再玩到格子占满，结算仍会显示"🎉 胜利／成功合成 2048"，
+            // 而玩家其实是这一局输在没格子可走。这里区分开来。
+            if (won) {
+                gameOver(GameResult(score, true, "已合成 2048 并结束本局，得分 " + score))
+            } else {
+                gameOver(GameResult(score, false, "没有可移动的格子了"))
+            }
         }
     }
 
@@ -145,7 +152,10 @@ class Game2048View(context: Context) : GameView(context) {
             if (v == 0) {
                 canvas.drawRoundRect(r, dp(8).toFloat(), dp(8).toFloat(), emptyPaint)
             } else {
-                tilePaint.color = tileColors[v] ?: 0xFFE8EAF0.toInt()
+                // 未登记的数值（4096/8192…）用深色兜底：旧实现回退到近白色板，
+                // 而下面 v > 4 一律用白字，于是大数字会变成白底白字、完全看不清。
+                val bg = tileColors[v] ?: 0xFF6C8BFF.toInt()
+                tilePaint.color = bg
                 canvas.drawRoundRect(r, dp(8).toFloat(), dp(8).toFloat(), tilePaint)
                 textPaint.color = if (v <= 4) 0xFF1C2333.toInt() else 0xFFFFFFFF.toInt()
                 textPaint.textSize = if (v < 100) cellSize * 0.42f else cellSize * 0.34f

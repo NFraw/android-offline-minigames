@@ -5,13 +5,21 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.view.MotionEvent
+import com.minigames.collection.common.BoardArt
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
 import kotlin.math.abs
 import kotlin.math.min
 
-/** 斗兽棋：象狮虎豹狼狗猫鼠互吃，鼠吃象，先进入对方兽穴或吃光对方获胜。 */
+/**
+ * 斗兽棋：象狮虎豹狼狗猫鼠互吃，鼠吃象，先进入对方兽穴或吃光对方获胜。
+ *
+ * 【美术说明】底色统一为 Palette.BG；格子保留原有语义（陆地/河面/陷阱一眼可辨），
+ * 但配色收敛到柔和卡通风：陆地暖米色、河面柔和蓝、陷阱柔和橙棕，全部改大圆角 + 柔和描边，
+ * 去掉原先生硬的深棕描边；棋子改为 BoardArt 的奶油色圆棋子（红方文字偏红、黑方偏深），
+ * 底部提示改为 art.drawCenterText。棋盘整体让出顶部悬浮控件安全区 dp(SAFE_TOP_DP)。
+ */
 class AnimalView(context: Context) : GameView(context) {
 
     companion object {
@@ -38,38 +46,83 @@ class AnimalView(context: Context) : GameView(context) {
     private var cell = 0f
     private var boardLeft = 0f
     private var boardTop = 0f
-    private var cellRect = RectF()
+    private val cellRect = RectF()
 
-    private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
-    private val cellPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFD9B38C.toInt() }
-    private val waterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF37C2F0.toInt() }
-    private val trapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFB25B33.toInt() }
-    private val trapStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF7A3B1D.toInt()
+    /** 美术工具箱：统一奶油棋子 / 居中提示文字。 */
+    private val art = BoardArt(this)
+    /** 背景色（与全库统一背景 Palette.BG 一致）。 */
+    private val bgPaint = Paint().apply { color = BoardArt.Palette.BG }
+    /** 陆地格：暖米色（低饱和，不抢棋子）。 */
+    private val cellPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFEBD9BA.toInt() }
+    /** 陆地上的一圈柔和描边（替代原来没有边界的平铺色块）。 */
+    private val cellStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x33BF9560.toInt()
         style = Paint.Style.STROKE
         strokeWidth = 2f
     }
-    private val piecePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val selPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFF5D547.toInt()
+    /** 河面：柔和蓝（比原来的高饱和青蓝低一档）。 */
+    private val waterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF9BD7F0.toInt() }
+    private val waterStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x5590C0DC.toInt()
         style = Paint.Style.STROKE
-        strokeWidth = 4f
+        strokeWidth = 2f
     }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val waterMark = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x336FA8C8.toInt() }
+    /** 陷阱：柔和橙棕。 */
+    private val trapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFEBB183.toInt() }
+    private val trapStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x66C98A55.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+    }
+    /** 兽穴：略深的暖棕，与陷阱区分。 */
+    private val denPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFD9A273.toInt() }
+    private val denStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x77B9793F.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+    }
+    /** 红方棋子文字（偏红）。 */
+    private val redTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFB02A2A.toInt()
         textAlign = Paint.Align.CENTER
-        textSize = 37f
-        color = 0xFF8A93A6.toInt()
+    }
+    /** 黑方棋子文字（偏深）。 */
+    private val blackTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF20242E.toInt()
+        textAlign = Paint.Align.CENTER
+    }
+    /** 格子上的辅助文字（"陷"/"穴"）。 */
+    private val markPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
     }
 
     override fun onLayout(w: Int, h: Int) {
-        cell = kotlin.math.min(w / N.toFloat(), h / M.toFloat()) * 0.98f
+        // 顶部让出悬浮控件安全区，底部给提示文字留位置。
+        // 安全区之后再留 56dp：悬浮控件（重开/帮助）比安全区最低沿还要低一点，
+        // 棋盘贴太紧时顶行的棋子会被「?」按钮压住。
+        val topPad = dp(SAFE_TOP_DP).toFloat() + dp(56).toFloat()
+        val bottomPad = dp(84).toFloat()
+        // 棋盘是 9 列 × 7 行（宽大于高）。竖屏手机上受屏宽限制，算出的棋盘高度
+        // 通常只有可用高度的一半左右。若在整段可用高度里居中，上下会各留一大片空白、
+        // 棋盘像"悬在屏幕中间"；这里让它贴着头部下方开始，余量全部落到提示文字上方。
+        cell = min(w / N.toFloat(), (h - topPad - bottomPad) / M.toFloat()) * 0.98f
         boardLeft = (w - cell * N) / 2f
-        boardTop = (h - cell * M) / 2f
+        boardTop = topPad
         reset()
     }
 
-    private fun isWater(x: Int, y: Int): Boolean =
-        (x == 3 || x == 4 || x == 5) && (y == 1 || y == 2 || y == 4 || y == 5)
+    /**
+     * 是否为河面。
+     * 兽穴正前方的陷阱格（黑方 (4,1)、红方 (4,5)）必须是陆地：
+     * 本作棋盘被压缩成 9×7（标准是 7×9），河面横带取 y∈{1,2}∪{4,5}，
+     * 正好把这两个陷阱格也包了进去。结果它们被渲染成水格（不显示"陷"字）、
+     * 且除鼠以外的棋子根本进不去，兽穴正前方的陷阱形同虚设。
+     */
+    private fun isWater(x: Int, y: Int): Boolean {
+        if (trapOwner(x, y) >= 0) return false
+        return (x == 3 || x == 4 || x == 5) && (y == 1 || y == 2 || y == 4 || y == 5)
+    }
 
     /** 陷阱归属方：围绕兽穴的三个格。黑方兽穴在上 (4,0)，红方兽穴在下 (4,6)。 */
     private fun trapOwner(x: Int, y: Int): Int {
@@ -82,8 +135,11 @@ class AnimalView(context: Context) : GameView(context) {
 
     override fun onTouch(event: MotionEvent) {
         if (event.action != MotionEvent.ACTION_DOWN || over || paused) return
-        val c = ((event.x - boardLeft) / cell).toInt()
-        val r = ((event.y - boardTop) / cell).toInt()
+        val fc = (event.x - boardLeft) / cell
+        val fr = (event.y - boardTop) / cell
+        if (fc < 0f || fr < 0f) return  // 负值 toInt() 向零截断会把棋盘外一格解析成第 0 行/列
+        val c = fc.toInt()
+        val r = fr.toInt()
         if (!inBounds(c, r)) return
         val idx = r * N + c
         if (selected < 0) {
@@ -168,9 +224,13 @@ class AnimalView(context: Context) : GameView(context) {
 
     private fun canCapture(sx: Int, sy: Int, p: Int, tx: Int, ty: Int, target: Int): Boolean {
         if (target == 0) return true
-        // 陷阱：目标在攻击方陷阱内被削弱（任意可吃）；目标在己方陷阱内受保护（不可吃）
+        // 陷阱：站在【攻击方所属陷阱】里的棋子被削弱，任何棋子都能吃（含鼠吃象）。
+        // 站在自己陷阱里的棋子不享受保护，按正常等级/水域规则比较。
+        // 旧实现写成 `if (tp >= 0) return tp == side(p)`，把"目标在己方陷阱"直接判为不可吃 ——
+        // 等于给己方陷阱里的棋子加了无敌效果（例：红鼠吃不了站在黑方自己陷阱里的黑象），
+        // 与标准规则相反，会直接改写胜负。
         val tp = trapOwner(tx, ty)
-        if (tp >= 0) return tp == side(p)
+        if (tp >= 0 && tp == side(p)) return true
         val pWater = isWater(sx, sy)
         val tWater = isWater(tx, ty)
         // 水中鼠的庇护：岸上棋子不能吃水中的鼠
@@ -202,37 +262,51 @@ class AnimalView(context: Context) : GameView(context) {
             val x = boardLeft + c * cell
             val y = boardTop + r * cell
             cellRect.set(x, y, x + cell, y + cell)
+            val rr = dp(10f)
+            val den = (r == 0 || r == M - 1) && c == 4
             if (isWater(c, r)) {
-                canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), waterPaint)
+                // 河面：柔和蓝 + 浅描边 + 三道水纹暗示
+                canvas.drawRoundRect(cellRect, rr, rr, waterPaint)
+                canvas.drawRoundRect(cellRect, rr, rr, waterStroke)
+                val cyy = y + cell / 2f
+                for (k in 0 until 3) {
+                    val wy = cyy - cell * 0.18f + k * cell * 0.18f
+                    canvas.drawLine(x + cell * 0.24f, wy, x + cell * 0.76f, wy, waterMark)
+                }
             } else if (trapOwner(c, r) >= 0) {
-                canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), trapPaint)
-                canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), trapStroke)
+                // 陷阱：柔和橙棕，保留"陷"字语义
+                canvas.drawRoundRect(cellRect, rr, rr, trapPaint)
+                canvas.drawRoundRect(cellRect, rr, rr, trapStroke)
+                markPaint.color = 0x99FFFFFF.toInt()
+                markPaint.textSize = cell * 0.36f
+                canvas.drawText("陷", x + cell / 2f, centerBaseline(y + cell / 2f, markPaint), markPaint)
+            } else if (den) {
+                // 兽穴：略深的暖棕，"穴"字保持醒目
+                canvas.drawRoundRect(cellRect, rr, rr, denPaint)
+                canvas.drawRoundRect(cellRect, rr, rr, denStroke)
+                markPaint.color = 0xCC5A3A1E.toInt()
+                markPaint.textSize = cell * 0.42f
+                canvas.drawText("穴", x + cell / 2f, centerBaseline(y + cell / 2f, markPaint), markPaint)
             } else {
-                canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), cellPaint)
+                // 陆地：暖米色 + 柔和描边，大圆角
+                canvas.drawRoundRect(cellRect, rr, rr, cellPaint)
+                canvas.drawRoundRect(cellRect, rr, rr, cellStroke)
             }
             val p = board[r * N + c]
             if (p != 0) {
                 val a = if (p > 0) p else -p
-                piecePaint.color = if (p > 0) 0xFFE8503A.toInt() else 0xFF1C2333.toInt()
-                canvas.drawCircle(x + cell / 2f, y + cell / 2f, cell * 0.36f, piecePaint)
-                textPaint.color = 0xFFFFFFFF.toInt()
-                textPaint.textSize = cell * 0.5f
-                drawPieceText(canvas, textPaint, NAMES[a], x + cell / 2f, y + cell / 2f, p < 0)
-            } else if (trapOwner(c, r) >= 0) {
-                textPaint.color = 0x66FFFFFF.toInt()
-                textPaint.textSize = cell * 0.38f
-                canvas.drawText("陷", x + cell / 2f, y + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
-            }
-            if (r * N + c == selected) {
-                canvas.drawRoundRect(cellRect, dp(4).toFloat(), dp(4).toFloat(), selPaint)
+                // 奶油色圆棋子（美术工具箱统一画法）；黑方棋子字面朝上（p < 0）
+                art.drawCreamPiece(
+                    canvas, x + cell / 2f, y + cell / 2f, cell * 0.4f, NAMES[a],
+                    if (p > 0) redTextPaint.color else blackTextPaint.color,
+                    facingUp = p < 0, selected = r * N + c == selected)
             }
         }
-        // 兽穴标记
-        canvas.drawText("穴", boardLeft + 4 * cell + cell / 2f, boardTop + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
-        canvas.drawText("穴", boardLeft + 4 * cell + cell / 2f, boardTop + 6 * cell + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2f, textPaint)
-        textPaint.color = 0xFF8A93A6.toInt()
-        textPaint.textSize = 36f
-        canvas.drawText((if (turn == 0) "红方" else "黑方") + "回合 · 鼠吃象 · 狮虎跳河 · 进对方陷阱被任意棋子吃", width / 2f, boardTop + cell * M + dp(28).toFloat(), textPaint)
+        // 底部提示：放在棋盘之下，避开右下角得分胶囊区域
+        art.drawCenterText(
+            canvas,
+            (if (turn == 0) "红方" else "黑方") + "回合 · 鼠吃象 · 狮虎跳河 · 进对方陷阱被任意棋子吃",
+            width / 2f, boardTop + cell * M + dp(26f), 13f, BoardArt.Palette.DIM)
     }
 
     override fun reset() {

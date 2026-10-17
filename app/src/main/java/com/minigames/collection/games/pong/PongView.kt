@@ -11,7 +11,7 @@ import com.minigames.collection.common.SoundManager
 import kotlin.math.abs
 import kotlin.math.hypot
 
-/** 乒乓 Pong：玩家1（上）与玩家2（下）各自在自己的半屏拖动球拍，先到 5 分获胜。 */
+/** 乒乓 Pong：玩家1（下）与玩家2（上）各自在自己的半屏拖动球拍，先到 5 分获胜。 */
 class PongView(context: Context) : GameView(context) {
 
     companion object {
@@ -73,12 +73,20 @@ class PongView(context: Context) : GameView(context) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val idx = event.actionIndex
                 val id = event.getPointerId(idx)
+                // 玩家 1 在下半屏、玩家 2 在上半屏（与全库"玩家 1 朝下"的座位约定一致）。
                 if (event.getY(idx) < height / 2f) {
-                    pointerP1 = id
-                    p1y = clampX(event.getX(idx))
+                    // 同一半屏若已有手指在控拍就不要覆盖标记：旧实现无条件覆盖，
+                    // 随手多按一根再抬起它就会把标记清成 -1，原来按住的那根手指从此推不动球拍
+                    // （表现为球拍"锁死"，必须完全重新按一次）。
+                    if (pointerP2 < 0) {
+                        pointerP2 = id
+                        p2y = clampX(event.getX(idx))
+                    }
                 } else {
-                    pointerP2 = id
-                    p2y = clampX(event.getX(idx))
+                    if (pointerP1 < 0) {
+                        pointerP1 = id
+                        p1y = clampX(event.getX(idx))
+                    }
                 }
             }
             MotionEvent.ACTION_MOVE -> {
@@ -108,6 +116,16 @@ class PongView(context: Context) : GameView(context) {
 
     override fun update(dt: Float) {
         if (over) return
+        // 按位移自适应分段：球速上限 2400px/s，dt 被基类钳到 0.05s 时单帧位移可达 120px，
+        // 而球拍判定带只有 paddleH + 2*ballR（小屏约 68px）。不分子步的话，掉帧或高速球
+        // 会直接穿过球拍被误判成对方得分，直接改变胜负。
+        val moveDist = hypot(vx, vy) * dt
+        val steps = (moveDist / (ballR * 1.5f)).toInt().coerceIn(1, 8)
+        val sdt = dt / steps
+        repeat(steps) { if (!over) stepOnce(sdt) }
+    }
+
+    private fun stepOnce(dt: Float) {
         ballX += vx * dt
         ballY += vy * dt
         // 左右墙
@@ -120,33 +138,33 @@ class PongView(context: Context) : GameView(context) {
             vx = -abs(vx)
         }
         // 球拍
-        val p1Rect = RectF(p1y - paddleW / 2f, topY, p1y + paddleW / 2f, topY + paddleH)
-        val p2Rect = RectF(p2y - paddleW / 2f, bottomY, p2y + paddleW / 2f, bottomY + paddleH)
+        val p1Rect = RectF(p1y - paddleW / 2f, bottomY, p1y + paddleW / 2f, bottomY + paddleH)
+        val p2Rect = RectF(p2y - paddleW / 2f, topY, p2y + paddleW / 2f, topY + paddleH)
         if (vy < 0 && ballY - ballR <= topY + paddleH && ballY + ballR >= topY &&
-            ballX >= p1Rect.left - ballR && ballX <= p1Rect.right + ballR
+            ballX >= p2Rect.left - ballR && ballX <= p2Rect.right + ballR
         ) {
             ballY = topY + paddleH + ballR
             vy = abs(vy)
-            vx = abs(vx) * 0.92f + (ballX - p1y) / (paddleW / 2f) * speed * 0.7f
-            boostVelocity()
-            playSound(SoundManager.MOVE)
-        }
-        if (vy > 0 && ballY + ballR >= bottomY && ballY - ballR <= bottomY + paddleH &&
-            ballX >= p2Rect.left - ballR && ballX <= p2Rect.right + ballR
-        ) {
-            ballY = bottomY - ballR
-            vy = -abs(vy)
             vx = abs(vx) * 0.92f + (ballX - p2y) / (paddleW / 2f) * speed * 0.7f
             boostVelocity()
             playSound(SoundManager.MOVE)
         }
-        // 出界得分
+        if (vy > 0 && ballY + ballR >= bottomY && ballY - ballR <= bottomY + paddleH &&
+            ballX >= p1Rect.left - ballR && ballX <= p1Rect.right + ballR
+        ) {
+            ballY = bottomY - ballR
+            vy = -abs(vy)
+            vx = abs(vx) * 0.92f + (ballX - p1y) / (paddleW / 2f) * speed * 0.7f
+            boostVelocity()
+            playSound(SoundManager.MOVE)
+        }
+        // 出界得分：球从上方出界是上方玩家（玩家 2）漏球，玩家 1 得分；反之亦然
         if (ballY < -ballR * 2) {
-            s2++
+            s1++
             playSound(SoundManager.EAT)
             checkWin()
         } else if (ballY > height + ballR * 2) {
-            s1++
+            s2++
             playSound(SoundManager.EAT)
             checkWin()
         }
@@ -175,11 +193,14 @@ class PongView(context: Context) : GameView(context) {
     override fun drawGame(canvas: Canvas) {
         canvas.drawRect(gameRect, bgPaint)
         canvas.drawLine(0f, height / 2f, width.toFloat(), height / 2f, linePaint)
-        canvas.drawRoundRect(RectF(p1y - paddleW / 2f, topY, p1y + paddleW / 2f, topY + paddleH), dp(10).toFloat(), dp(10).toFloat(), paddlePaint)
-        canvas.drawRoundRect(RectF(p2y - paddleW / 2f, bottomY, p2y + paddleW / 2f, bottomY + paddleH), dp(10).toFloat(), dp(10).toFloat(), paddle2Paint)
+        // 上方是玩家 2 的球拍（橙色），下方是玩家 1 的球拍（蓝色）
+        canvas.drawRoundRect(RectF(p2y - paddleW / 2f, topY, p2y + paddleW / 2f, topY + paddleH), dp(10).toFloat(), dp(10).toFloat(), paddle2Paint)
+        canvas.drawRoundRect(RectF(p1y - paddleW / 2f, bottomY, p1y + paddleW / 2f, bottomY + paddleH), dp(10).toFloat(), dp(10).toFloat(), paddlePaint)
         canvas.drawCircle(ballX, ballY, ballR, ballPaint)
-        canvas.drawText("玩家1  " + s1 + " : " + s2 + "  玩家2", width / 2f, dp(40).toFloat(), scorePaint)
-        canvas.drawText("先到 " + WIN_SCORE + " 分获胜 · 各自在自己半屏拖动控制", width / 2f, height - dp(18).toFloat(), scorePaint)
+        val scoreText = "玩家1  " + s1 + " : " + s2 + "  玩家2"
+        // 下方（玩家 1）正常绘制；上方（玩家 2）必须旋转 180°，否则上方玩家看到的是倒字
+        canvas.drawText(scoreText, width / 2f, height - dp(22).toFloat(), scorePaint)
+        drawPieceText(canvas, scorePaint, scoreText, width / 2f, dp(46).toFloat(), true)
     }
 
     override fun reset() {

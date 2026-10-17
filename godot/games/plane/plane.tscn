@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://games/plane/plane.gd" id="1"]
+[node name="Plane" type="Node2D"]
+script = ExtResource("1")
+game_title = "星航防线"
+game_rules = "拖动飞机自动开火；接补给升级双发/三发与快射，导弹为独立冷却副武器。漏接补给会消失。敌方导弹会预警、能击落，不会追踪。击败六关Boss即通关；5点耐久耗尽结束。"
+start_caption = "开始飞行"
+resume_caption = "继续飞行"
+lives_caption = "耐久"
+max_lives = 5
+control_hint = "拖动躲避瞄准弹 · 实际接住补给 · 导弹为独立副武器"
+end_caption = "飞行结束"
+category_caption = "六关战役 · 自动开火"

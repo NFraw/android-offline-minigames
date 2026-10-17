@@ -51,8 +51,13 @@ class SlidingView(context: Context) : GameView(context) {
 
     override fun onTouch(event: MotionEvent) {
         if (event.action != MotionEvent.ACTION_DOWN || over || paused) return
-        val c = ((event.x - boardLeft) / cell).toInt()
-        val r = ((event.y - boardTop) / cell).toInt()
+        val fc = (event.x - boardLeft) / cell
+        val fr = (event.y - boardTop) / cell
+        // 负值 toInt() 向零截断会把棋盘上边/左边一格内的空白解析成第 0 行/列；
+        // 若该格恰好与空格相邻就会误滑动。
+        if (fc < 0f || fr < 0f) return
+        val c = fc.toInt()
+        val r = fr.toInt()
         if (r !in 0 until N || c !in 0 until N) return
         val idx = r * N + c
         val br = blank / N
@@ -64,6 +69,13 @@ class SlidingView(context: Context) : GameView(context) {
             blank = idx
             moves++
             playSound(SoundManager.MOVE)
+            // 实时展示当前步数对应的分数（最终分 = 500 - 步数×8），
+            // 否则得分胶囊整局都停在"得分 0"，结算时才跳到最终分。
+            val live = max(0, 500 - moves * 8)
+            if (live != lastShownScore) {
+                lastShownScore = live
+                setScore(live)
+            }
             if (isSolved()) {
                 over = true
                 val finalScore = max(0, 500 - moves * 8)
@@ -75,6 +87,8 @@ class SlidingView(context: Context) : GameView(context) {
             playSound(SoundManager.CLICK)
         }
     }
+
+    private var lastShownScore = 0
 
     private fun isSolved(): Boolean {
         for (i in 0 until SIZE - 1) if (board[i] != i + 1) return false
@@ -112,6 +126,7 @@ class SlidingView(context: Context) : GameView(context) {
         } while (isSolved() || !isSolvable())
         moves = 0
         over = false
+        lastShownScore = 0
         setScore(0)
         start()
     }

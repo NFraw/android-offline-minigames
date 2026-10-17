@@ -16,6 +16,7 @@ class SimonView(context: Context) : GameView(context) {
     private var inputIdx = 0
     private var showIdx = 0
     private var showTimer = 0f
+    private var showLit = true // true=色块亮起，false=间隔熄灭（让连续同色可区分）
     private var showing = true
     private var level = 1
     private var over = false
@@ -57,9 +58,11 @@ class SimonView(context: Context) : GameView(context) {
             playSound(SoundManager.CLICK)
             if (inputIdx >= sequence.size) {
                 level++
+                setScore(level * 10)   // 实时刷新得分胶囊，否则整局都显示"得分 0"
                 sequence.add((0..3).random())
                 inputIdx = 0
                 showIdx = 0
+                showLit = true
                 showing = true
                 showTimer = 0.5f
                 playSound(SoundManager.EAT)
@@ -77,13 +80,24 @@ class SimonView(context: Context) : GameView(context) {
         if (over || !showing) return
         showTimer -= dt
         if (showTimer <= 0f) {
-            showIdx++
-            if (showIdx >= sequence.size) {
-                // 最后一个色块已闪完，进入等待输入
-                showing = false
-                inputIdx = 0
+            if (showLit) {
+                // 亮灯阶段结束：先熄灭一下（间隔），再进入下一个色块。
+                // 这里要判断的是"下一个色块与本色块是否相同"，即 sequence[showIdx] 与
+                // sequence[showIdx+1]；旧实现拿 showIdx-1 与 showIdx 比较，加长间隔的判定
+                // 整体错位一格（间隔被放到了相同两色对之后），连续同色的辨识帮助失效。
+                showLit = false
+                val sameAsNext = showIdx + 1 < sequence.size && sequence[showIdx + 1] == sequence[showIdx]
+                showTimer = if (sameAsNext) 0.55f else 0.36f
             } else {
-                showTimer = 0.45f
+                showIdx++
+                if (showIdx >= sequence.size) {
+                    // 最后一个色块已闪完，进入等待输入
+                    showing = false
+                    inputIdx = 0
+                } else {
+                    showLit = true
+                    showTimer = 0.3f
+                }
             }
         }
         invalidate()
@@ -98,7 +112,7 @@ class SimonView(context: Context) : GameView(context) {
             val rect = RectF(cx, cy, cx + half, cy + half)
             // 正在展示时按序列值点亮对应色块；点击反馈单独点亮被按下的色块
             val lit = (tapFlash > 0f && tapQuad == q) ||
-                (showing && showIdx < sequence.size && sequence[showIdx] == q)
+                (showing && showLit && showIdx < sequence.size && sequence[showIdx] == q)
             quadPaint.color = if (lit) colors[q] else dimColors[q]
             canvas.drawRoundRect(rect, dp(14).toFloat(), dp(14).toFloat(), quadPaint)
         }
@@ -112,6 +126,7 @@ class SimonView(context: Context) : GameView(context) {
         sequence.add((0..3).random())
         inputIdx = 0
         showIdx = 0
+        showLit = true
         showTimer = 0.5f
         showing = true
         level = 1

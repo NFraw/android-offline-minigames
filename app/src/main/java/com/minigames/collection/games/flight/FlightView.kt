@@ -2,132 +2,115 @@ package com.minigames.collection.games.flight
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.RectF
+import android.graphics.Shader
 import android.view.MotionEvent
-import android.widget.Toast
+import com.minigames.collection.common.BoardArt
+import com.minigames.collection.common.BoardArt.Palette
 import com.minigames.collection.common.GameResult
 import com.minigames.collection.common.GameView
 import com.minigames.collection.common.SoundManager
-import kotlin.math.abs
 import kotlin.math.min
 
 /**
- * 飞行棋（2~4 人同屏）：每人 4 架飞机。
- * 掷到 6 起飞并可再掷，连续三个 6 停一轮；踩到对方飞机整架踢回停机坪，同色可叠机；
- * 绕场一圈进入彩色冲刺道，4 架飞机全部到达中心终点者获胜。
+ * 飞行棋（2~4 人同屏）。
+ *
+ * ## 与旧版的差异
+ * 旧版把机库、起飞格、跑道、冲刺道、终点分别写死在四套互不相关的网格坐标里，
+ * 画出来"四个色块分布完全不对应"。这一版全部改为由 [FlightBoard] **单一数据源**推导，
+ * 四个阵营用旋转 90° 得到，几何上不可能再偏移。
+ *
+ * 规则由 [FlightRules] 承载（起飞 / 跳格 / 飞行 / 踢子 / 叠子 / 冲刺 / 三次六判罚 / 胜负），
+ * 与本类的绘制完全解耦 —— 因此规则可以单独单测（见 FlightBoardTest）。
+ *
+ * 骰子改为 3D 立方体（见 [Dice3D]），带缓动旋转动画，掷骰更有实感。
  */
 class FlightView(context: Context) : GameView(context) {
 
-    companion object {
-        private const val TRACK = 52
-        private const val DASH = 5 // 冲刺道格数
-        private const val HOME = 57 // 终点（中心）
-    }
-
     private enum class Phase { SELECT, PLAY, OVER }
 
-    // 每玩家 4 架飞机；offset=-1 停机坪，0..51 轨道，52..56 冲刺道，57 终点
-    private val pos = Array(4) { IntArray(4) { -1 } }
-    private var turn = 0
+    // ---- 核心数据 ----
+    private var rules: FlightRules? = null
+    private val board = FlightBoard(4)          // 几何与人数无关，先建一个
+    private var phase = Phase.SELECT
     private var players = 0
-    private var dice = 1
+
+    // ---- 骰子 ----
+    private val dice = Dice3D(resources.displayMetrics.density)
+    private var diceValue = 1
     private var rolling = false
     private var rollTimer = 0f
-    private var sixStreak = 0
-    private var waitPick = false
-    private var phase = Phase.SELECT
+    private var rollCooldown = 0f
 
+    // ---- 状态提示 ----
+    private var toastText = ""
+    private var toastT = 0f
+
+    // ---- 选人卡片 ----
+    private val selBtns = ArrayList<Pair<RectF, Int>>()
+
+    // ---- 美术 ----
+    private val art = BoardArt(this)
+    private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palette.BG }
+    private val boardPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x33000000
+        style = Paint.Style.STROKE
+        strokeWidth = 1.2f
+    }
+    private val cellPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val pathPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val planePath = Path()
+
+    // 四个阵营色（柔和卡通）
+    private val colors = intArrayOf(
+        0xFFE8503A.toInt(),   // 红
+        0xFF3E8BF0.toInt(),   // 蓝
+        0xFF3ED98A.toInt(),   // 绿
+        0xFFF5A54A.toInt()    // 黄
+    )
+    private val names = arrayOf("红", "蓝", "绿", "黄")
+
+    // ---- 布局 ----
     private var boardLeft = 0f
     private var boardTop = 0f
     private var cell = 0f
-    private val diceBtn = RectF()
-    private val selBtns = ArrayList<Pair<RectF, Int>>()
-
-    private val colors = intArrayOf(0xFFE8503A.toInt(), 0xFF37C2F0.toInt(), 0xFF3ED98A.toInt(), 0xFFF5A54A.toInt())
-    private val names = arrayOf("红", "蓝", "绿", "黄")
-
-    private val bgPaint = Paint().apply { color = 0xFF141A2E.toInt() }
-    private val boardPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1E2740.toInt() }
-    private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3A4668.toInt() }
-    private val dicePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF5F6FA.toInt() }
-    private val btnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF2A3557.toInt() }
-    private val maskPaint = Paint().apply { color = 0xCC141A2E.toInt() }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        textSize = 44f
-        color = 0xFFE8EAF0.toInt()
-    }
-    private val textDarkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        textSize = 44f
-        color = 0xFF1C2333.toInt()
-    }
-    private val smallPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        textSize = 32f
-        color = 0xFF8A93A6.toInt()
-    }
-    private val whiteStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFFFFFFF.toInt()
-        style = Paint.Style.STROKE
-        strokeWidth = 3f
-    }
+    private val boardRect = RectF()
+    private val diceRect = RectF()
 
     override fun onLayout(w: Int, h: Int) {
-        boardLeft = w * 0.03f
-        boardTop = dp(100).toFloat()
-        val boardSize = min(w * 0.94f, (h - dp(100) - dp(230)).toFloat()).coerceAtLeast(1f)
-        cell = boardSize / 14f
-        val dw = w * 0.34f
-        val dh = dp(58).toFloat()
-        diceBtn.set(w / 2f - dw / 2f, h - dp(190).toFloat(), w / 2f + dw / 2f, h - dp(190).toFloat() + dh)
+        val topPad = dp(SAFE_TOP_DP).toFloat()
+        val bottomZone = dp(210).toFloat()
+        val availH = h - topPad - bottomZone
+        // 棋盘是正方形，取宽高中较小者
+        val side = min(w * 0.96f, availH).coerceAtLeast(dp(140).toFloat())
+        cell = side / FlightBoard.SIZE
+        boardLeft = (w - side) / 2f
+        boardTop = topPad + (availH - side) / 2f
+        boardRect.set(boardLeft, boardTop, boardLeft + side, boardTop + side)
+
+        // 骰子区
+        val dw = min(w * 0.30f, dp(110).toFloat())
+        diceRect.set(w / 2f - dw / 2f, h - dp(175).toFloat(), w / 2f + dw / 2f, h - dp(175).toFloat() + dw)
+
+        // 选人卡片
         selBtns.clear()
-        val bw = dp(100).toFloat()
-        val bh = dp(66).toFloat()
-        val gap = dp(26).toFloat()
-        val totalW = bw * 3 + gap * 2
+        val cardW = min((w - dp(60).toFloat()) / 3.6f, dp(110).toFloat())
+        val cardH = cardW * 1.25f
+        val gap = dp(14).toFloat()
+        val totalW = cardW * 3 + gap * 2
+        val cardY = h * 0.52f - cardH / 2f
         for (i in 0..2) {
-            selBtns.add(Pair(RectF(w / 2f - totalW / 2f + i * (bw + gap), h * 0.5f, w / 2f - totalW / 2f + i * (bw + gap) + bw, h * 0.5f + bh), i + 2))
+            val x = w / 2f - totalW / 2f + i * (cardW + gap)
+            selBtns.add(Pair(RectF(x, cardY, x + cardW, cardY + cardH), i + 2))
         }
         reset()
     }
-
-    // ---------- 棋盘布局 ----------
-
-    private fun startOf(pl: Int): Int = intArrayOf(6, 18, 31, 45)[pl]
-
-    /** 轨道格索引 -> 网格坐标 (gx, gy)，网格 14×14。 */
-    private fun trackPos(i: Int): Pair<Int, Int> = when {
-        i <= 11 -> Pair(1 + i, 0)
-        i == 12 -> Pair(13, 0)
-        i <= 24 -> Pair(13, i - 12)
-        i == 25 -> Pair(13, 13)
-        i <= 37 -> Pair(38 - i, 13)
-        i == 38 -> Pair(0, 13)
-        i <= 50 -> Pair(0, 51 - i)
-        else -> Pair(0, 0)
-    }
-
-    /** 冲刺道格（k=1..5，从起飞格向中心）。 */
-    private fun dashPos(pl: Int, k: Int): Pair<Int, Int> = when (pl) {
-        0 -> Pair(7, k)        // 红：顶边 (7,0) 向下
-        1 -> Pair(13 - k, 6)   // 蓝：右边 (13,6) 向左
-        2 -> Pair(7, 13 - k)   // 绿：底边 (7,13) 向上
-        else -> Pair(k, 6)     // 黄：左边 (0,6) 向右
-    }
-
-    /** 停机坪格（每玩家 2×2）。 */
-    private fun hangarPos(pl: Int, i: Int): Pair<Int, Int> {
-        val gx0 = if (pl == 0 || pl == 3) 1 else 11
-        val gy0 = if (pl == 0 || pl == 1) 1 else 11
-        return Pair(gx0 + i % 2, gy0 + i / 2)
-    }
-
-    private fun cellCenterX(g: Int): Float = boardLeft + (g + 0.5f) * cell
-    private fun cellCenterY(g: Int): Float = boardTop + (g + 0.5f) * cell
-
-    // ---------- 交互 ----------
 
     override fun onTouch(event: MotionEvent) {
         if (event.action != MotionEvent.ACTION_DOWN || paused) return
@@ -136,8 +119,10 @@ class FlightView(context: Context) : GameView(context) {
                 for ((rect, n) in selBtns) {
                     if (rect.contains(event.x, event.y)) {
                         players = n
+                        rules = FlightRules(n)
                         phase = Phase.PLAY
-                        resetBoard()
+                        dice.snap(1)
+                        showToast("掷骰开始！" + names[rules!!.turn] + "方先手")
                         playSound(SoundManager.CLICK)
                         invalidate()
                         return
@@ -145,298 +130,523 @@ class FlightView(context: Context) : GameView(context) {
                 }
             }
             Phase.PLAY -> {
-                if (rolling) return
-                if (waitPick) {
-                    val i = hitPlane(turn, event.x, event.y)
-                    if (i >= 0) doMove(turn, i, dice)
-                } else if (diceBtn.contains(event.x, event.y)) {
-                    rolling = true
-                    rollTimer = 0f
-                    playSound(SoundManager.MOVE)
+                val r = rules ?: return
+                // 点骰子 → 掷
+                if (diceRect.contains(event.x, event.y) && !rolling) {
+                    startRoll()
+                    return
                 }
-                invalidate()
-            }
-            else -> {}
-        }
-    }
-
-    override fun update(dt: Float) {
-        if (phase != Phase.PLAY || !rolling) return
-        rollTimer += dt
-        if (rollTimer < 0.45f) {
-            dice = (1..6).random()
-            invalidate()
-            return
-        }
-        rolling = false
-        resolveRoll()
-        invalidate()
-    }
-
-    private fun resolveRoll() {
-        val n = dice
-        if (n == 6) sixStreak++ else sixStreak = 0
-        if (sixStreak >= 3) {
-            sixStreak = 0
-            Toast.makeText(context, "连续三个 6，停一轮", Toast.LENGTH_SHORT).show()
-            nextTurn()
-            return
-        }
-        val list = ArrayList<Int>()
-        for (i in 0 until 4) if (canMove(turn, i, n)) list.add(i)
-        if (list.isEmpty()) {
-            nextTurn()
-            return
-        }
-        if (list.size == 1) {
-            doMove(turn, list[0], n)
-        } else {
-            waitPick = true
-        }
-    }
-
-    private fun canMove(pl: Int, idx: Int, n: Int): Boolean {
-        val p = pos[pl][idx]
-        if (p < 0) return n == 6 // 停机坪：掷 6 才能起飞
-        if (p >= HOME) return false
-        return true // 轨道/冲刺道总是可前进（超步弹回）
-    }
-
-    private fun doMove(pl: Int, idx: Int, n: Int) {
-        waitPick = false
-        val p = pos[pl][idx]
-        val target: Int = if (p < 0) 0 else {
-            var t = p + n
-            if (t > HOME) t = HOME - (t - HOME)
-            t
-        }
-        pos[pl][idx] = target
-        if (target in 0 until TRACK) {
-            val abs = (startOf(pl) + target) % TRACK
-            var kicked = false
-            for (o in 0 until players) {
-                if (o == pl) continue
-                for (j in 0 until 4) {
-                    val q = pos[o][j]
-                    if (q in 0 until TRACK && (startOf(o) + q) % TRACK == abs) {
-                        pos[o][j] = -1
-                        kicked = true
+                // 点飞机 → 走子
+                if (!rolling) {
+                    val hit = hitPlane(event.x, event.y)
+                    if (hit != null) {
+                        applyMove(hit.first, hit.second)
                     }
                 }
             }
-            if (kicked) {
-                playSound(SoundManager.LOSE)
-                Toast.makeText(context, names[pl] + "方踩中对方飞机，踢回停机坪", Toast.LENGTH_SHORT).show()
+            else -> {}
+        }
+        invalidate()
+    }
+
+    override fun update(dt: Float) {
+        if (toastT > 0f) {
+            toastT -= dt
+            if (toastT <= 0f) toastText = ""
+        }
+        dice.step(dt)
+        if (rolling) {
+            rollTimer += dt
+            if (rollTimer < 0.85f) {
+                // 掷骰过程中随机换点数，配合旋转动画
+                diceValue = (1..6).random()
+                dice.animateTo(diceValue, spinTurns = 1)
+            } else {
+                rolling = false
+                val r = rules ?: return
+                val rolled = r.roll(diceValue)
+                if (rolled == 0) {
+                    showToast("连续三次 6，本轮作废！轮到" + names[r.turn] + "方")
+                    playSound(SoundManager.LOSE)
+                } else {
+                    showToast(names[r.turn] + "方掷出 " + rolled + " 点")
+                    playSound(SoundManager.MOVE)
+                    // 若无子可走，自动换手
+                    if (r.legalMoves(rolled).isEmpty() && !r.canRollAgain()) {
+                        r.passTurn()
+                        showToast("无子可走，轮到" + names[r.turn] + "方")
+                    }
+                }
             }
         }
-        playSound(SoundManager.EAT)
-        if (pos[pl].all { it >= HOME }) {
-            phase = Phase.OVER
-            playSound(SoundManager.WIN)
-            gameOver(GameResult(0, true, names[pl] + "方 4 架飞机全部到达终点获胜！"))
+        invalidate()
+    }
+
+    private fun startRoll() {
+        val r = rules ?: return
+        if (r.rolled && !r.canRollAgain()) {
+            showToast("请先走子")
             return
         }
-        if (n == 6) {
-            Toast.makeText(context, "掷到 6，再掷一次", Toast.LENGTH_SHORT).show()
-        } else {
-            nextTurn()
-        }
+        rolling = true
+        rollTimer = 0f
+        playSound(SoundManager.MOVE)
     }
 
-    private fun nextTurn() {
-        sixStreak = 0
-        waitPick = false
-        turn = (turn + 1) % players
-    }
-
-    /** 命中检测：返回被点到的该玩家飞机索引，未命中返回 -1。 */
-    private fun hitPlane(pl: Int, x: Float, y: Float): Int {
-        var best = -1
+    /** 命中一架可移动的飞机。返回 (玩家, 飞机号)。 */
+    private fun hitPlane(x: Float, y: Float): Pair<Int, Int>? {
+        val r = rules ?: return null
+        val moves = r.legalMoves(diceValue)
+        var best: Pair<Int, Int>? = null
         var bestD = Float.MAX_VALUE
-        for (i in 0 until 4) {
-            if (!canMove(pl, i, dice)) continue
-            val (px, py) = planeScreenPos(pl, i)
-            val dx = px - x
-            val dy = py - y
-            val d = dx * dx + dy * dy
+        for ((idx, _) in moves) {
+            val p = r.planes[idx]
+            val pos = planePosition(p)
+            val d = (pos.first - x) * (pos.first - x) + (pos.second - y) * (pos.second - y)
             if (d < bestD) {
                 bestD = d
-                best = i
+                best = Pair(p.player, p.index)
             }
         }
-        val maxD = cell * cell * 0.45f
-        return if (bestD <= maxD) best else -1
+        return if (bestD <= cell * cell * 1.1f) best else null
     }
 
-    private fun planeScreenPos(pl: Int, idx: Int): Pair<Float, Float> {
-        val p = pos[pl][idx]
-        return when {
-            p == -1 -> {
-                val (gx, gy) = hangarPos(pl, idx)
-                Pair(cellCenterX(gx), cellCenterY(gy))
-            }
-            p == HOME -> Pair(boardLeft + 7f * cell, boardTop + 7f * cell)
-            p in 0 until TRACK -> {
-                val (gx, gy) = trackPos(p)
-                Pair(cellCenterX(gx), cellCenterY(gy))
-            }
-            else -> {
-                val (gx, gy) = dashPos(pl, p - DASH)
-                Pair(cellCenterX(gx), cellCenterY(gy))
-            }
+    private fun applyMove(player: Int, index: Int) {
+        val r = rules ?: return
+        val plane = r.planesOf(player).firstOrNull { it.index == index } ?: return
+        val mv = r.applyMove(plane, diceValue) ?: return
+
+        if (mv.flew) showToast(names[player] + "方起飞，飞跃全场！")
+        else if (mv.jumped) showToast(names[player] + "方跳到下一格！")
+
+        if (mv.kicked.isNotEmpty()) {
+            showToast(names[mv.kicked[0].player] + "方的飞机被踢回停机坪！")
+            playSound(SoundManager.LOSE)
+        } else {
+            playSound(SoundManager.CLICK)
+        }
+
+        if (r.isWinner(player)) {
+            phase = Phase.OVER
+            playSound(SoundManager.WIN)
+            gameOver(GameResult(0, true, names[player] + "方 4 架飞机全部到达终点获胜！"))
+            return
+        }
+
+        // 掷到 6 可再掷
+        if (!r.canRollAgain()) {
+            r.passTurn()
+            showToast("轮到" + names[r.turn] + "方")
         }
     }
 
-    /** 叠机偏移：同一格多架飞机时错开排列。 */
-    private fun stackOffset(pl: Int, idx: Int): Pair<Float, Float> {
-        val (x, y) = planeScreenPos(pl, idx)
-        val same = ArrayList<Pair<Int, Int>>()
-        for (a in 0 until players) for (j in 0 until 4) {
-            if (pos[a][j] < 0) continue
-            val (ax, ay) = planeScreenPos(a, j)
-            if (abs(ax - x) < 0.5f && abs(ay - y) < 0.5f) same.add(Pair(a, j))
-        }
-        val k = same.indexOf(Pair(pl, idx))
-        val d = cell * 0.17f
-        return when (k % 4) {
-            0 -> Pair(-d, -d)
-            1 -> Pair(d, -d)
-            2 -> Pair(-d, d)
-            else -> Pair(d, d)
-        }
+    private fun showToast(msg: String) {
+        toastText = msg
+        toastT = 2.0f
     }
 
     // ---------- 绘制 ----------
 
     override fun drawGame(canvas: Canvas) {
         canvas.drawRect(gameRect, bgPaint)
-        val bw = cell * 14
-        canvas.drawRoundRect(
-            RectF(boardLeft - cell * 0.6f, boardTop - cell * 0.6f, boardLeft + bw + cell * 0.6f, boardTop + bw + cell * 0.6f),
-            dp(16).toFloat(), dp(16).toFloat(), boardPaint)
-
-        // 中心终点
-        val cx = boardLeft + 7f * cell
-        val cy = boardTop + 7f * cell
-        canvas.drawCircle(cx, cy, cell * 1.05f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF5F6FA.toInt() })
-        val endText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textAlign = Paint.Align.CENTER
-            textSize = cell * 0.85f
-            color = 0xFF1C2333.toInt()
-        }
-        canvas.drawText("终", cx, cy + cell * 0.32f, endText)
-
-        // 轨道格（角格稍大）
-        for (i in 0 until TRACK) {
-            val (gx, gy) = trackPos(i)
-            val isCorner = i == 12 || i == 25 || i == 38 || i == 51
-            val r = if (isCorner) cell * 0.32f else cell * 0.28f
-            canvas.drawCircle(cellCenterX(gx), cellCenterY(gy), r, dotPaint)
-        }
-
-        for (pl in 0 until players) {
-            // 起点格标记
-            val (sgx, sgy) = trackPos(startOf(pl))
-            canvas.drawCircle(cellCenterX(sgx), cellCenterY(sgy), cell * 0.34f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors[pl] })
-            // 冲刺道
-            for (k in 1..DASH) {
-                val (dgx, dgy) = dashPos(pl, k)
-                canvas.drawRoundRect(
-                    RectF(cellCenterX(dgx) - cell * 0.36f, cellCenterY(dgy) - cell * 0.36f, cellCenterX(dgx) + cell * 0.36f, cellCenterY(dgy) + cell * 0.36f),
-                    dp(5).toFloat(), dp(5).toFloat(), Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors[pl] })
-            }
-            // 停机坪
-            drawHangar(canvas, pl)
-        }
-
-        // 飞机
-        for (pl in 0 until players) {
-            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors[pl] }
-            for (i in 0 until 4) {
-                val (px, py) = planeScreenPos(pl, i)
-                val (ox, oy) = stackOffset(pl, i)
-                val dx = px + ox
-                val dy = py + oy
-                canvas.drawCircle(dx, dy, cell * 0.3f, p)
-                if (phase == Phase.PLAY && waitPick && pl == turn && canMove(pl, i, dice)) {
-                    canvas.drawCircle(dx, dy, cell * 0.4f, whiteStroke)
-                }
-                smallPaint.color = 0xFFFFFFFF.toInt()
-                smallPaint.textSize = cell * 0.34f
-                canvas.drawText((i + 1).toString(), dx, dy + cell * 0.12f, smallPaint)
-            }
-        }
-
-        if (phase == Phase.PLAY) {
-            // 玩家进度
-            val sb = StringBuilder()
-            for (pl in 0 until players) {
-                val done = pos[pl].count { it >= HOME }
-                if (pl > 0) sb.append("   ")
-                sb.append(names[pl]).append(":").append(done).append("/4")
-            }
-            smallPaint.textSize = 34f
-            canvas.drawText(sb.toString(), width / 2f, diceBtn.top - dp(78).toFloat(), smallPaint)
-            // 状态提示
-            textPaint.textSize = 42f
-            val tip = when {
-                rolling -> "掷骰中…"
-                waitPick -> "玩家 " + (turn + 1) + "（" + names[turn] + "方）请点选要移动的飞机"
-                else -> "玩家 " + (turn + 1) + "（" + names[turn] + "方）点击骰子掷骰"
-            }
-            canvas.drawText(tip, width / 2f, diceBtn.top - dp(40).toFloat(), textPaint)
-            // 骰子
-            canvas.drawRoundRect(diceBtn, dp(14).toFloat(), dp(14).toFloat(), dicePaint)
-            textDarkPaint.textSize = 59f
-            canvas.drawText(dice.toString(), diceBtn.centerX(), diceBtn.centerY() + dp(8).toFloat(), textDarkPaint)
-            smallPaint.textSize = 32f
-            canvas.drawText("掷 6 起飞再掷 · 踩中对方踢回 · 4 架全到终点获胜", width / 2f, diceBtn.bottom + dp(42).toFloat(), smallPaint)
-        }
-
         if (phase == Phase.SELECT) {
-            canvas.drawRect(gameRect, maskPaint)
-            textPaint.textSize = 62f
-            canvas.drawText("✈️ 飞行棋", width / 2f, height * 0.3f, textPaint)
-            textPaint.textSize = 42f
-            canvas.drawText("每人 4 架飞机，掷 6 起飞 · 4 架全到终点获胜", width / 2f, height * 0.3f + dp(46).toFloat(), textPaint)
-            for ((rect, n) in selBtns) {
-                canvas.drawRoundRect(rect, dp(16).toFloat(), dp(16).toFloat(), btnPaint)
-                textPaint.textSize = 53f
-                canvas.drawText(n.toString() + " 人", rect.centerX(), rect.centerY() + dp(4).toFloat(), textPaint)
+            drawSelectScreen(canvas)
+            return
+        }
+        drawBoard(canvas)
+        drawPlanes(canvas)
+        drawHud(canvas)
+        drawDice(canvas)
+    }
+
+    /** 棋盘：跑道 + 机库 + 冲刺道 + 中心终点。全部由 FlightBoard 推导，严格对应。 */
+    private fun drawBoard(canvas: Canvas) {
+        val radius = dp(18f)
+        // 底板
+        boardPaint.color = 0xFFF0F3F8.toInt()
+        canvas.drawRoundRect(boardRect, radius, radius, boardPaint)
+        // 内描边
+        linePaint.color = 0x22000000
+        linePaint.strokeWidth = dp(1.5f)
+        canvas.drawRoundRect(boardRect, radius, radius, linePaint)
+
+        // ---- 1. 跑道底带（浅色圆环）----
+        drawTrackBand(canvas)
+
+        // ---- 2. 机库（四角）----
+        for (p in 0 until players) drawHangar(canvas, p)
+
+        // ---- 3. 冲刺道（四条）----
+        for (p in 0 until players) drawHomeLane(canvas, p)
+
+        // ---- 4. 中心终点 ----
+        drawCenter(canvas)
+
+        // ---- 5. 跑道格 ----
+        for (n in 0 until FlightBoard.RING) drawRingCell(canvas, n)
+    }
+
+    /** 跑道底带：沿外圈铺一条浅色圆环，让 52 格连成闭环。 */
+    private fun drawTrackBand(canvas: Canvas) {
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x22FFFFFF }
+        val bandW = cell * 0.92f
+        // 用四个圆角矩形拼环（避免 Path 二次贝塞尔）
+        val inset = cell * 1.0f
+        val r = boardRect.left + inset
+        val t = boardRect.top + inset
+        val ri = boardRect.right - inset
+        val b = boardRect.bottom - inset
+        val outer = RectF(r - bandW, t - bandW, ri + bandW, b + bandW)
+        val inner = RectF(r + bandW, t + bandW, ri - bandW, b - bandW)
+        val path = Path().apply {
+            addRoundRect(outer, dp(16f), dp(16f), Path.Direction.CW)
+            addRoundRect(inner, dp(12f), dp(12f), Path.Direction.CCW)
+        }
+        canvas.drawPath(path, p)
+    }
+
+    /** 单个跑道格。 */
+    private fun drawRingCell(canvas: Canvas, n: Int) {
+        val pt = board.ringPoint(n)
+        val cx = boardLeft + pt.cx * cell
+        val cy = boardTop + pt.cy * cell
+        val r = cell * 0.42f
+
+        // 找出这格属于谁（起飞格/飞行格）
+        var owner = -1
+        for (p in 0 until players) {
+            if (board.absoluteRing(p, 0) == n) owner = p
+            if (board.flySquare(p) == n) owner = p
+        }
+
+        val rect = RectF(cx - r, cy - r, cx + r, cy + r)
+        if (owner >= 0) {
+            cellPaint.color = colors[owner]
+            canvas.drawRoundRect(rect, dp(5f), dp(5f), cellPaint)
+            // 飞行格画虚线连接到对面
+            if (board.flySquare(owner) == n) {
+                drawFlyLine(canvas, owner)
             }
+        } else {
+            cellPaint.color = 0xFFE4E9F0.toInt()
+            canvas.drawRoundRect(rect, dp(5f), dp(5f), cellPaint)
         }
+        linePaint.color = 0x22000000
+        linePaint.strokeWidth = dp(1f)
+        canvas.drawRoundRect(rect, dp(5f), dp(5f), linePaint)
     }
 
-    private fun drawHangar(canvas: Canvas, pl: Int) {
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG)
-        fill.color = (colors[pl] and 0xFFFFFF) or 0x33000000.toInt()
-        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = colors[pl]
+    /** 飞行虚线：从飞行格连到正对面的飞行格。 */
+    private fun drawFlyLine(canvas: Canvas, player: Int) {
+        val a = board.ringPoint(board.flySquare(player))
+        val b = board.ringPoint(board.absoluteRing(player, 20 + FlightBoard.PER_SIDE * 2))
+        val ax = boardLeft + a.cx * cell
+        val ay = boardTop + a.cy * cell
+        val bx = boardLeft + b.cx * cell
+        val by = boardTop + b.cy * cell
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x66FFFFFF
             style = Paint.Style.STROKE
-            strokeWidth = 2f
+            strokeWidth = dp(1.5f)
+            pathEffect = android.graphics.DashPathEffect(floatArrayOf(dp(4f), dp(4f)), 0f)
         }
+        canvas.drawLine(ax, ay, bx, by, p)
+    }
+
+    /** 机库（四角）。 */
+    private fun drawHangar(canvas: Canvas, player: Int) {
+        val r = board.hangarRect(player)
+        val rect = RectF(
+            boardLeft + r[0] * cell, boardTop + r[1] * cell,
+            boardLeft + r[2] * cell, boardTop + r[3] * cell)
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = (colors[player] and 0x00FFFFFF) or 0x33000000
+        }
+        canvas.drawRoundRect(rect, dp(12f), dp(12f), fill)
+        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = colors[player]
+            style = Paint.Style.STROKE
+            strokeWidth = dp(2f)
+        }
+        canvas.drawRoundRect(rect, dp(12f), dp(12f), stroke)
+
+        // 4 个停机位（空心圆）
         for (i in 0 until 4) {
-            val (gx, gy) = hangarPos(pl, i)
-            val x = boardLeft + gx * cell
-            val y = boardTop + gy * cell
-            val rect = RectF(x + 1.5f, y + 1.5f, x + cell - 1.5f, y + cell - 1.5f)
-            canvas.drawRoundRect(rect, dp(4).toFloat(), dp(4).toFloat(), fill)
-            canvas.drawRoundRect(rect, dp(4).toFloat(), dp(4).toFloat(), stroke)
+            val slot = board.hangarPoint(player, i)
+            val sx = boardLeft + slot.cx * cell
+            val sy = boardTop + slot.cy * cell
+            val sr = cell * 0.3f
+            val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = 0x55000000
+                style = Paint.Style.STROKE
+                strokeWidth = dp(1.5f)
+            }
+            canvas.drawCircle(sx, sy, sr, ring)
+        }
+
+        // 阵营名
+        art.drawCenterText(canvas, names[player],
+            rect.centerX(), rect.bottom - cell * 0.2f, 11f, colors[player])
+    }
+
+    /** 冲刺道（6 格）。 */
+    private fun drawHomeLane(canvas: Canvas, player: Int) {
+        for (k in 1..FlightBoard.HOME_LEN) {
+            val pt = board.homePoint(player, k)
+            val cx = boardLeft + pt.cx * cell
+            val cy = boardTop + pt.cy * cell
+            val r = cell * 0.42f
+            val rect = RectF(cx - r, cy - r, cx + r, cy + r)
+            cellPaint.color = (colors[player] and 0x00FFFFFF) or 0x66000000
+            canvas.drawRoundRect(rect, dp(5f), dp(5f), cellPaint)
+            linePaint.color = 0x33000000
+            linePaint.strokeWidth = dp(1f)
+            canvas.drawRoundRect(rect, dp(5f), dp(5f), linePaint)
         }
     }
 
-    private fun resetBoard() {
-        for (pl in 0 until 4) for (i in 0 until 4) pos[pl][i] = -1
-        turn = 0
-        dice = 1
-        rolling = false
-        sixStreak = 0
-        waitPick = false
+    /** 中心终点。 */
+    private fun drawCenter(canvas: Canvas) {
+        val pt = board.homePoint()
+        val cx = boardLeft + pt.cx * cell
+        val cy = boardTop + pt.cy * cell
+        val r = cell * 0.72f
+
+        // 四色扇形
+        for (p in 0 until 4) {
+            val path = Path().apply {
+                moveTo(cx, cy)
+                arcTo(RectF(cx - r, cy - r, cx + r, cy + r),
+                    -90f + p * 90f, 90f, false)
+                close()
+            }
+            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = (colors[p] and 0x00FFFFFF) or 0x88000000.toInt()
+            }
+            canvas.drawPath(path, fill)
+        }
+
+        // 中心小圆
+        val c = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt() }
+        canvas.drawCircle(cx, cy, cell * 0.22f, c)
+
+        // 描边
+        val s = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFFFFFFF.toInt()
+            style = Paint.Style.STROKE
+            strokeWidth = dp(2f)
+        }
+        canvas.drawCircle(cx, cy, r, s)
+    }
+
+    /** 飞机（三角形，机头朝行进方向）。 */
+    private fun drawPlanes(canvas: Canvas) {
+        val r = rules ?: return
+        // 叠子：同格多架时错开
+        val counts = HashMap<String, Int>()
+        for (p in r.planes) {
+            if (p.inBase) continue
+            val pos = planePosition(p)
+            val key = "${pos.first.toInt()}_${pos.second.toInt()}"
+            val idx = counts[key] ?: 0
+            counts[key] = idx + 1
+            val offset = (idx - 0.5f) * cell * 0.16f
+            drawPlane(canvas, p.player, p.index,
+                pos.first + offset, pos.second + offset,
+                planeAngle(p))
+        }
+    }
+
+    private fun drawPlane(canvas: Canvas, player: Int, index: Int, cx: Float, cy: Float, angle: Float) {
+        val r = cell * 0.42f
+        // 软投影
+        val sh = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x33000000 }
+        canvas.drawCircle(cx + dp(1f), cy + dp(2f), r * 0.92f, sh)
+
+        canvas.save()
+        canvas.translate(cx, cy)
+        canvas.rotate(angle)
+
+        // 机身
+        planePath.reset()
+        planePath.moveTo(r * 1.0f, 0f)
+        planePath.lineTo(-r * 0.72f, -r * 0.9f)
+        planePath.lineTo(-r * 0.32f, 0f)
+        planePath.lineTo(-r * 0.72f, r * 0.9f)
+        planePath.close()
+        val body = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors[player] }
+        canvas.drawPath(planePath, body)
+
+        // 描边
+        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = (colors[player] and 0x00FFFFFF) or 0x55000000
+            style = Paint.Style.STROKE
+            strokeWidth = dp(1.2f)
+        }
+        canvas.drawPath(planePath, edge)
+        canvas.restore()
+
+        // 中心圆徽章 + 机号
+        val badge = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt() }
+        canvas.drawCircle(cx, cy, r * 0.32f, badge)
+        art.drawCenterText(canvas, (index + 1).toString(), cx, cy, 8f, Palette.TEXT)
+    }
+
+    /** 飞机朝向（机头朝行进方向）。 */
+    private fun planeAngle(p: FlightRules.Plane): Float {
+        if (p.inBase) return -90f
+        if (p.atHome) return -90f
+        val r = rules ?: return -90f
+        val board2 = FlightBoard(players)
+        // 在跑道上：朝下一格方向
+        if (p.progress < FlightBoard.RING) {
+            val cur = board2.ringPoint(board2.absoluteRing(p.player, p.progress))
+            val nxt = board2.ringPoint(board2.absoluteRing(p.player, p.progress + 1))
+            val dx = nxt.cx - cur.cx
+            val dy = nxt.cy - cur.cy
+            return Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
+        }
+        // 在冲刺道上：朝中心
+        val cur = board2.homePoint(p.player, p.progress - FlightBoard.RING + 1)
+        val c = board2.homePoint()
+        val dx = c.cx - cur.cx
+        val dy = c.cy - cur.cy
+        return Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
+    }
+
+    /** 飞机在画布上的像素坐标。 */
+    private fun planePosition(p: FlightRules.Plane): Pair<Float, Float> {
+        val r = rules ?: return Pair(boardLeft, boardTop)
+        val b = FlightBoard(players)
+        val pt = if (p.inBase) {
+            b.hangarPoint(p.player, p.index)
+        } else if (p.atHome) {
+            b.homePoint()
+        } else if (p.progress < FlightBoard.RING) {
+            b.ringPoint(b.absoluteRing(p.player, p.progress))
+        } else {
+            b.homePoint(p.player, p.progress - FlightBoard.RING + 1)
+        }
+        return Pair(boardLeft + pt.cx * cell, boardTop + pt.cy * cell)
+    }
+
+    /** 底部 HUD：回合 + 进度 + 提示。 */
+    private fun drawHud(canvas: Canvas) {
+        val r = rules ?: return
+        val w = width.toFloat()
+
+        // 回合状态条
+        val barW = min(w * 0.86f, dp(340f))
+        val barH = dp(38f)
+        val barY = diceRect.top - dp(64f)
+        val bar = RectF(w / 2f - barW / 2f, barY, w / 2f + barW / 2f, barY + barH)
+        val tip = when {
+            rolling -> "掷骰中…"
+            else -> names[r.turn] + "方回合 · 点击骰子掷骰"
+        }
+        art.drawStatusBar(canvas, bar, tip, colors[r.turn])
+
+        // 进度点阵
+        val dotR = dp(5f)
+        val dotGap = dp(15f)
+        val dotsW = 4 * dotGap
+        val groupGap = dp(26f)
+        val totalW = players * dotsW + (players - 1) * groupGap
+        var x0 = w / 2f - totalW / 2f
+        val dotY = bar.bottom + dp(18f)
+        for (pl in 0 until players) {
+            art.drawCenterText(canvas, names[pl], x0 - dp(10f), dotY, 10f,
+                if (pl == r.turn) colors[pl] else Palette.DIM)
+            val done = r.homeCount(pl)
+            for (k in 0 until 4) {
+                val px = x0 + k * dotGap + dotGap / 2f
+                val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = if (k < done) colors[pl] else 0x44FFFFFF
+                }
+                canvas.drawCircle(px, dotY, dotR, p)
+            }
+            x0 += dotsW + groupGap
+        }
+
+        // 提示
+        if (toastText.isNotEmpty()) {
+            val tw = art.measureText(toastText, 12f) + dp(30f)
+            val th = dp(30f)
+            val tr = RectF(w / 2f - tw / 2f, diceRect.bottom + dp(10f),
+                w / 2f + tw / 2f, diceRect.bottom + dp(10f) + th)
+            art.drawPill(canvas, tr, 0xE61C2333.toInt())
+            art.drawCenterText(canvas, toastText, tr.centerX(), tr.centerY(), 12f, Palette.TEXT_LIGHT)
+        } else {
+            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Palette.DIM
+                textAlign = Paint.Align.CENTER
+                textSize = sp(11f)
+            }
+            canvas.drawText("掷到 6 起飞 · 落同色格跳 4 格 · 飞行格可飞跃全场",
+                w / 2f, diceRect.bottom + dp(24f), p)
+        }
+    }
+
+    /** 3D 骰子。 */
+    private fun drawDice(canvas: Canvas) {
+        val cx = diceRect.centerX()
+        val cy = diceRect.centerY()
+        val size = diceRect.width() * 0.86f
+        dice.draw(canvas, cx, cy, size)
+
+        // 骰子下方"点击掷骰"提示
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Palette.DIM
+            textAlign = Paint.Align.CENTER
+            textSize = sp(10f)
+        }
+        canvas.drawText("点击掷骰", cx, diceRect.bottom + dp(10f), p)
+    }
+
+    /** 选人界面。 */
+    private fun drawSelectScreen(canvas: Canvas) {
+        val w = width.toFloat()
+        val titleY = dp(SAFE_TOP_DP).toFloat() + dp(46f)
+        art.drawCenterTextShadow(canvas, "✈️ 飞行棋", w / 2f, titleY, 28f, Palette.TEXT_LIGHT)
+        art.drawCenterText(canvas, "2~4 人 · 掷 6 起飞 · 4 架全到终点获胜",
+            w / 2f, titleY + dp(32f), 12f, Palette.DIM, bold = false)
+
+        for ((rect, n) in selBtns) {
+            art.drawCard(canvas, rect, 0xFFFDFCF7.toInt(), 20f)
+            // 多色顶条
+            val stripPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+            val stripTop = rect.top + dp(4f)
+            val stripBottom = stripTop + dp(10f)
+            val segW = (rect.width() - dp(8f)) / n
+            for (k in 0 until n) {
+                stripPaint.color = colors[k]
+                val sx = rect.left + dp(4f) + k * segW
+                canvas.drawRect(sx, stripTop, sx + segW + 0.5f, stripBottom, stripPaint)
+            }
+            // 飞机图标
+            val oldCell = cell
+            cell = rect.width() * 0.62f
+            drawPlane(canvas, 0, 0, rect.centerX(), rect.top + rect.height() * 0.45f, -90f)
+            cell = oldCell
+            art.drawCenterText(canvas, n.toString() + " 人", rect.centerX(),
+                rect.bottom - dp(30f), 18f, Palette.TEXT)
+        }
+
+        val hintY = (selBtns.lastOrNull()?.first?.bottom ?: height * 0.7f) + dp(30f)
+        art.drawCenterTextShadow(canvas, "支持 2 / 3 / 4 人同屏轮流掷骰",
+            w / 2f, hintY, 11f, Palette.DIM, bold = false)
     }
 
     override fun reset() {
-        resetBoard()
-        phase = if (players == 0) Phase.SELECT else Phase.PLAY
+        players = 0
+        rules = null
+        phase = Phase.SELECT
+        rolling = false
+        rollTimer = 0f
+        toastText = ""
+        toastT = 0f
+        dice.snap(1)
+        diceValue = 1
         start()
     }
 }
